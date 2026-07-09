@@ -142,8 +142,8 @@ export class OAuthTokenExchangeService {
                 };
             }
 
-            // Build redirect URL - hardcoded to match the registered URL on Deriv
-            const redirectUrl = 'https://www.profithub.co.ke';
+            // Build redirect URL - dynamic to support both local development and production
+            const redirectUrl = window.location.origin;
 
             const requestBody = new URLSearchParams({
                 grant_type: 'authorization_code',
