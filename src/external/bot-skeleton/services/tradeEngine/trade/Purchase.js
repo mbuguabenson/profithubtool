@@ -17,6 +17,18 @@ export default Engine =>
                 return Promise.resolve();
             }
 
+            if (isSpeedMode) {
+                const now = Date.now();
+                const lastPurchase = this.lastPurchaseTime || 0;
+                const symbol = this.symbol || this.tradeOptions?.symbol || (this.trade_option && this.trade_option.underlying_symbol) || '';
+                const is1sMarket = symbol && (symbol.startsWith('1HZ') || symbol.includes('1s') || symbol.includes('1S'));
+                const minDelay = is1sMarket ? 1000 : 2000;
+                if (now - lastPurchase < minDelay) {
+                    return Promise.resolve();
+                }
+                this.lastPurchaseTime = now;
+            }
+
             const onSuccess = response => {
                 // Don't unnecessarily send a forget request for a purchased contract.
                 const { buy } = response;
