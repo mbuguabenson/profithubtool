@@ -77,7 +77,6 @@ export class ActiveSymbolsProcessorService {
     private static instance: ActiveSymbolsProcessorService;
 
     // Constants for timeouts and cache duration
-    private readonly ENRICHMENT_TIMEOUT_MS = 10000;
 
     private constructor() {}
 
