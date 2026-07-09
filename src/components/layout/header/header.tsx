@@ -18,10 +18,8 @@ import useThemeSwitcher from '@/hooks/useThemeSwitcher';
 import { LegacyThemeDarkIcon, LegacyThemeLightIcon } from '@deriv/quill-icons/Legacy';
 import './header.scss';
 
-const CurrencyConverter = () => {
+const CurrencyConverter = ({ activeAccount }: { activeAccount: any }) => {
     const [rate, setRate] = useState<number>(129.5);
-    const [usdVal, setUsdVal] = useState<string>('1');
-    const [kesVal, setKesVal] = useState<string>('129.5');
     const [isOpen, setIsOpen] = useState(false);
     const popoverRef = useRef<HTMLDivElement | null>(null);
 
@@ -30,9 +28,7 @@ const CurrencyConverter = () => {
             .then(res => res.json())
             .then(data => {
                 if (data?.rates?.KES) {
-                    const newRate = data.rates.KES;
-                    setRate(newRate);
-                    setKesVal(newRate.toFixed(2));
+                    setRate(data.rates.KES);
                 }
             })
             .catch(err => console.warn('Failed to fetch real-time KES exchange rate:', err));
@@ -48,25 +44,13 @@ const CurrencyConverter = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const handleUsdChange = (val: string) => {
-        setUsdVal(val);
-        const parsed = parseFloat(val);
-        if (!isNaN(parsed)) {
-            setKesVal((parsed * rate).toFixed(2));
-        } else {
-            setKesVal('');
-        }
-    };
+    const balanceStr = activeAccount?.balance || '0';
+    const balanceNum = parseFloat(balanceStr.replace(/,/g, '')) || 0;
+    const currency = activeAccount?.currency || 'USD';
+    const convertedBalance = balanceNum * rate;
 
-    const handleKesChange = (val: string) => {
-        setKesVal(val);
-        const parsed = parseFloat(val);
-        if (!isNaN(parsed)) {
-            setUsdVal((parsed / rate).toFixed(2));
-        } else {
-            setUsdVal('');
-        }
-    };
+    const formattedUsd = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(balanceNum);
+    const formattedKes = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(convertedBalance);
 
     return (
         <div style={{ position: 'relative' }} ref={popoverRef}>
@@ -96,7 +80,7 @@ const CurrencyConverter = () => {
                 type='button'
             >
                 <span style={{ fontSize: '14px' }}>💵</span>
-                <span>1 USD = {rate.toFixed(2)} KES</span>
+                <span>KES {formattedKes}</span>
             </button>
 
             {isOpen && (
@@ -107,7 +91,7 @@ const CurrencyConverter = () => {
                         top: '100%',
                         right: 0,
                         marginTop: '8px',
-                        width: '240px',
+                        width: '260px',
                         background: 'var(--general-main-1)',
                         border: '1px solid var(--border-normal)',
                         borderRadius: '12px',
@@ -120,47 +104,74 @@ const CurrencyConverter = () => {
                     }}
                 >
                     <div style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-general)' }}>
-                        Currency Converter
+                        Balance Converter
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <label style={{ fontSize: '11px', color: 'var(--text-less-prominent)' }}>USD</label>
-                        <input
-                            type='number'
-                            value={usdVal}
-                            onChange={e => handleUsdChange(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '8px',
-                                borderRadius: '6px',
-                                border: '1px solid var(--border-normal)',
-                                background: 'var(--general-section-1)',
-                                color: 'var(--text-general)',
-                                outline: 'none',
-                                fontSize: '13px',
-                            }}
-                        />
+                        <div style={{ fontSize: '11px', color: 'var(--text-less-prominent)' }}>Active Balance</div>
+                        <div style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-general)' }}>
+                            {formattedUsd} {currency}
+                        </div>
                     </div>
+                    <div style={{ height: '1px', background: 'var(--border-normal)' }} />
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <label style={{ fontSize: '11px', color: 'var(--text-less-prominent)' }}>KES</label>
-                        <input
-                            type='number'
-                            value={kesVal}
-                            onChange={e => handleKesChange(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '8px',
-                                borderRadius: '6px',
-                                border: '1px solid var(--border-normal)',
-                                background: 'var(--general-section-1)',
-                                color: 'var(--text-general)',
-                                outline: 'none',
-                                fontSize: '13px',
-                            }}
-                        />
+                        <div style={{ fontSize: '11px', color: 'var(--text-less-prominent)' }}>Equivalent in KES</div>
+                        <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#4caf50' }}>
+                            {formattedKes} KES
+                        </div>
+                    </div>
+                    <div style={{ height: '1px', background: 'var(--border-normal)' }} />
+                    <div style={{ fontSize: '10px', color: 'var(--text-less-prominent)', textAlign: 'right' }}>
+                        Rate: 1 USD = {rate.toFixed(2)} KES
                     </div>
                 </div>
             )}
         </div>
+    );
+};
+
+const ChangeSpeedHeader = () => {
+    const [isSpeedMode, setIsSpeedMode] = useState(() => {
+        return localStorage.getItem('is_speed_mode_on') === 'true';
+    });
+
+    const toggleSpeedMode = () => {
+        const nextState = !isSpeedMode;
+        localStorage.setItem('is_speed_mode_on', String(nextState));
+        setIsSpeedMode(nextState);
+        window.dispatchEvent(new Event('speed_mode_changed'));
+    };
+
+    useEffect(() => {
+        const handleSync = () => {
+            setIsSpeedMode(localStorage.getItem('is_speed_mode_on') === 'true');
+        };
+        window.addEventListener('speed_mode_changed', handleSync);
+        return () => window.removeEventListener('speed_mode_changed', handleSync);
+    }, []);
+
+    return (
+        <button
+            onClick={toggleSpeedMode}
+            style={{
+                background: isSpeedMode ? 'rgba(255, 68, 79, 0.15)' : 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px',
+                borderRadius: '8px',
+                color: isSpeedMode ? '#ff444f' : 'var(--text-general)',
+                transition: 'all 0.2s',
+                border: isSpeedMode ? '1px solid rgba(255, 68, 79, 0.3)' : '1px solid transparent',
+                height: '32px',
+                width: '32px',
+            }}
+            title={isSpeedMode ? 'Speed Mode: MAX (Trading every tick)' : 'Speed Mode: NORMAL'}
+            type='button'
+        >
+            <span style={{ fontSize: '16px', fontWeight: 'bold' }}>⚡</span>
+        </button>
     );
 };
 
@@ -424,7 +435,8 @@ const AppHeader = observer(() => {
                 </Wrapper>
                 <Wrapper variant='right'>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <CurrencyConverter />
+                        <CurrencyConverter activeAccount={activeAccount} />
+                        <ChangeSpeedHeader />
                         <ChangeThemeHeader />
                         {renderAccountSection('right')}
                     </div>

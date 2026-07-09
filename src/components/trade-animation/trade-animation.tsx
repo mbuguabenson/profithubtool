@@ -31,9 +31,6 @@ const TradeAnimation = observer(({ className, should_show_overlay }: TTradeAnima
     const { contract_stage, is_stop_button_visible, is_stop_button_disabled, onRunButtonClick, onStopBotClick } =
         run_panel;
     const [shouldDisable, setShouldDisable] = React.useState(false);
-    const [speedModeOn, setSpeedModeOn] = React.useState(() => {
-        return localStorage.getItem('is_speed_mode_on') === 'true';
-    });
     const is_unavailable_for_payment_agent = false;
 
     // Get the load_modal store to monitor strategy deletions
@@ -167,86 +164,55 @@ const TradeAnimation = observer(({ className, should_show_overlay }: TTradeAnima
     };
 
     return (
-        <div className={classNames('animation__wrapper', className)} style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'stretch' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
-                <button
-                    onClick={() => {
-                        const current = localStorage.getItem('is_speed_mode_on') === 'true';
-                        localStorage.setItem('is_speed_mode_on', String(!current));
-                        setSpeedModeOn(!current);
-                    }}
-                    style={{
-                        background: speedModeOn ? '#ff444f' : 'var(--general-section-1, #3e3e3e)',
-                        border: '1px solid var(--border-normal, rgba(255,255,255,0.15))',
-                        borderRadius: '8px',
-                        padding: '8px 12px',
-                        color: '#ffffff',
-                        cursor: 'pointer',
-                        fontSize: '11px',
-                        fontWeight: 'bold',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.3s ease',
-                        flexShrink: 0,
-                        height: '40px',
-                    }}
-                    type='button'
-                >
-                    ⚡ {speedModeOn ? localize('SPEED: MAX') : localize('SPEED: NORMAL')}
-                </button>
-
-                {should_show_tooltip ? (
-                    <div className='run__button_wrapper' style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                        <Tooltip
-                            alignment={determineTooltipAlignment()}
-                            message={localize('The Run button is disabled because no Bot has been created yet.')}
-                            icon='info'
-                            className='qs__tooltip'
-                        />
-                        <div style={{ opacity: 0.5, marginLeft: '8px', flex: 1 }}>
-                            <Button
-                                is_disabled={true}
-                                className={button_props.class}
-                                id={button_props.id}
-                                icon={button_props.icon}
-                                onClick={() => {
-                                    // Disabled button, no action
-                                }}
-                                has_effect
-                                {...(is_stop_button_visible || !is_unavailable_for_payment_agent
-                                    ? { primary: true }
-                                    : { green: true })}
-                                style={{ width: '100%', height: '40px' }}
-                            >
-                                {button_props.text}
-                            </Button>
-                        </div>
+        <div className={classNames('animation__wrapper', className)}>
+            {should_show_tooltip ? (
+                <div className='run__button_wrapper'>
+                    <Tooltip
+                        alignment={determineTooltipAlignment()}
+                        message={localize('The Run button is disabled because no Bot has been created yet.')}
+                        icon='info'
+                        className='qs__tooltip'
+                    />
+                    <div style={{ opacity: 0.5, marginLeft: '8px' }}>
+                        <Button
+                            is_disabled={true}
+                            className={button_props.class}
+                            id={button_props.id}
+                            icon={button_props.icon}
+                            onClick={() => {
+                                // Disabled button, no action
+                            }}
+                            has_effect
+                            {...(is_stop_button_visible || !is_unavailable_for_payment_agent
+                                ? { primary: true }
+                                : { green: true })}
+                        >
+                            {button_props.text}
+                        </Button>
                     </div>
-                ) : (
-                    <Button
-                        is_disabled={(is_disabled && !is_unavailable_for_payment_agent) || contract_stage === 3}
-                        className={button_props.class}
-                        id={button_props.id}
-                        icon={button_props.icon}
-                        onClick={() => {
-                            setShouldDisable(true);
-                            if (is_stop_button_visible) {
-                                onStopBotClick();
-                                return;
-                            }
-                            onRunButtonClick();
-                        }}
-                        has_effect
-                        {...(is_stop_button_visible || !is_unavailable_for_payment_agent
-                            ? { primary: true }
-                            : { green: true })}
-                        style={{ flex: 1, height: '40px' }}
-                    >
-                        {button_props.text}
-                    </Button>
-                )}
-            </div>
+                </div>
+            ) : (
+                <Button
+                    is_disabled={(is_disabled && !is_unavailable_for_payment_agent) || contract_stage === 3}
+                    className={button_props.class}
+                    id={button_props.id}
+                    icon={button_props.icon}
+                    onClick={() => {
+                        setShouldDisable(true);
+                        if (is_stop_button_visible) {
+                            onStopBotClick();
+                            return;
+                        }
+                        onRunButtonClick();
+                    }}
+                    has_effect
+                    {...(is_stop_button_visible || !is_unavailable_for_payment_agent
+                        ? { primary: true }
+                        : { green: true })}
+                >
+                    {button_props.text}
+                </Button>
+            )}
             <div
                 className={classNames('animation__container', className, {
                     'animation--running': contract_stage > 0,
