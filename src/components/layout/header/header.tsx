@@ -14,7 +14,45 @@ import { AppLogo } from '../app-logo';
 import AccountSwitcher from './account-switcher';
 import MenuItems from './menu-items';
 import MobileMenu from './mobile-menu';
+import useThemeSwitcher from '@/hooks/useThemeSwitcher';
+import { LegacyThemeDarkIcon, LegacyThemeLightIcon } from '@deriv/quill-icons/Legacy';
 import './header.scss';
+
+const ChangeThemeHeader = observer(() => {
+    const { is_dark_mode_on, toggleTheme } = useThemeSwitcher();
+
+    return (
+        <button
+            className='header-theme-toggle'
+            onClick={toggleTheme}
+            style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px',
+                borderRadius: '8px',
+                color: 'var(--text-general)',
+                transition: 'background-color 0.2s',
+            }}
+            onMouseEnter={e => {
+                e.currentTarget.style.backgroundColor = 'var(--general-hover)';
+            }}
+            onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+            aria-label='Toggle theme'
+        >
+            {!is_dark_mode_on ? (
+                <LegacyThemeLightIcon iconSize='xs' fill='var(--text-general)' />
+            ) : (
+                <LegacyThemeDarkIcon iconSize='xs' fill='var(--text-general)' />
+            )}
+        </button>
+    );
+});
 
 const AppHeader = observer(() => {
     const { isDesktop } = useDevice();
@@ -238,7 +276,12 @@ const AppHeader = observer(() => {
                     <AppLogo />
                     {isDesktop ? <MenuItems /> : renderAccountSection('left')}
                 </Wrapper>
-                <Wrapper variant='right'>{renderAccountSection('right')}</Wrapper>
+                <Wrapper variant='right'>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <ChangeThemeHeader />
+                        {renderAccountSection('right')}
+                    </div>
+                </Wrapper>
             </Header>
         </>
     );

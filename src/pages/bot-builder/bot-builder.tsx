@@ -110,17 +110,40 @@ const BotBuilder = observer(() => {
     };
 
     React.useEffect(() => {
-        const workspace = window.Blockly?.derivWorkspace;
-        if (workspace && dashboard.pending_free_bot) {
-            const { name, xml } = dashboard.pending_free_bot;
-            dashboard.setPendingFreeBot(null);
-            load_modal.loadStrategyToBuilder({
-                id: name,
-                name,
-                xml,
-                save_type: 'local',
-            } as any);
-        }
+        if (!dashboard.pending_free_bot) return;
+
+        let is_mounted = true;
+        let attempts = 0;
+        const max_attempts = 40;
+
+        const checkAndLoad = () => {
+            const workspace = window.Blockly?.derivWorkspace;
+            if (workspace && !is_loading) {
+                if (is_mounted && dashboard.pending_free_bot) {
+                    const { name, xml } = dashboard.pending_free_bot;
+                    dashboard.setPendingFreeBot(null);
+                    setTimeout(() => {
+                        load_modal.loadStrategyToBuilder({
+                            id: name,
+                            name,
+                            xml,
+                            save_type: 'local',
+                        } as any);
+                    }, 50);
+                }
+            } else {
+                attempts++;
+                if (attempts < max_attempts && is_mounted) {
+                    setTimeout(checkAndLoad, 250);
+                }
+            }
+        };
+
+        checkAndLoad();
+
+        return () => {
+            is_mounted = false;
+        };
     }, [active_tab, is_loading, dashboard.pending_free_bot, load_modal]);
 
     return (
