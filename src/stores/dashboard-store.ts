@@ -2,7 +2,7 @@ import DOMPurify from 'dompurify';
 import { action, makeObservable, observable, reaction } from 'mobx';
 import { botNotification } from '@/components/bot-notification/bot-notification';
 import { notification_message, NOTIFICATION_TYPE } from '@/components/bot-notification/bot-notification-utils';
-import { TStores } from '@deriv/stores/types';
+// Removed TStores import from @deriv/stores/types
 import * as strategy_description from '../constants/quick-strategies';
 import { TDescriptionItem } from '../pages/bot-builder/quick-strategy/types';
 import {
@@ -70,7 +70,7 @@ export interface IDashboardStore {
 
 export default class DashboardStore implements IDashboardStore {
     root_store: RootStore;
-    core: TStores;
+    core: any;
     tutorials_combined_content: (TFaqContent | TGuideContent | TUserGuideContent | TQuickStrategyContent)[] = [];
     combined_search: string[] = [];
     bot_builder_symbol: string | null = null;
@@ -145,7 +145,7 @@ export default class DashboardStore implements IDashboardStore {
         const getFaqContent = faq_content().map(item => {
             return `${item.search_id}# ${item.title?.toLowerCase()} ${item.description
                 .map(inner_item => {
-                    const itemWithoutHTML = DOMPurify.sanitize(inner_item.content, {
+                    const itemWithoutHTML = DOMPurify.sanitize(inner_item.content || '', {
                         ALLOWED_TAGS: [], //kept empty to remove all tags
                     });
                     return itemWithoutHTML?.toLowerCase();
@@ -166,8 +166,7 @@ export default class DashboardStore implements IDashboardStore {
 
         const getQuickStrategyContent = quick_strategy_content().map(item => {
             const qs_card_content = item.content.join(' ')?.toLowerCase();
-            let qs_description_content = getQSDescriptionContent(strategy_description?.[item.qs_name]);
-            qs_description_content = qs_description_content.join(' ')?.toLowerCase();
+            const qs_description_content = getQSDescriptionContent((strategy_description as any)?.[item.qs_name]).join(' ')?.toLowerCase();
             return `${item.search_id}# ${item.type?.toLowerCase()} ${qs_description_content + qs_card_content}`;
         });
 
@@ -240,10 +239,10 @@ export default class DashboardStore implements IDashboardStore {
             return item.includes(search_param?.toLowerCase());
         });
 
-        const filtered_user_guide: [] = [];
-        const filter_video_guide: [] = [];
-        const filtered_faq_content: [] = [];
-        const filtered_quick_strategy_content: [] = [];
+        const filtered_user_guide: any[] = [];
+        const filter_video_guide: any[] = [];
+        const filtered_faq_content: any[] = [];
+        const filtered_quick_strategy_content: any[] = [];
 
         const filtered_tutorial_content = foundItems.map(item => {
             const identifier = item.split('#')[0];
@@ -277,7 +276,7 @@ export default class DashboardStore implements IDashboardStore {
                     ui: { is_dark_mode_on },
                 },
             },
-        } = this.root_store;
+        } = this.root_store as any;
         return is_dark_mode_on;
     }
 
@@ -397,7 +396,7 @@ export default class DashboardStore implements IDashboardStore {
     };
 
     onZoomInOutClick = (is_zoom_in: boolean): void => {
-        const workspace = window.Blockly.getMainWorkspace();
+        const workspace = (window.Blockly as any).getMainWorkspace();
         const metrics = workspace.getMetrics();
         const addition = is_zoom_in ? 1 : -1;
 
