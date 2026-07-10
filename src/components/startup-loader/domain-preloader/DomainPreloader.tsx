@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useDomainLoaderConfig } from '../useDomainLoaderConfig';
 import { useLoaderProgress } from '../useLoaderProgress';
 import { CircularLoader } from './CircularLoader';
-import { FallingMoney } from './FallingMoney';
 import { LoadingProgress } from './LoadingProgress';
 import { LoadingStatus } from './LoadingStatus';
 import './DomainPreloader.scss';
@@ -28,19 +27,14 @@ export const DomainPreloader: React.FC<DomainPreloaderProps> = ({
     const [showReducedLoader, setShowReducedLoader] = useState(false);
     const completionFiredRef = useRef(false);
 
-    // Check if this is a repeat visit in the same session
     useEffect(() => {
-        if (disableSessionReduction) {
-            return;
-        }
-
+        if (disableSessionReduction) return;
         const hasLoaderShown = sessionStorage.getItem('siteLoaderShown');
         if (hasLoaderShown) {
             setShowReducedLoader(true);
         }
     }, [disableSessionReduction]);
 
-    // Adjust duration for repeat visits
     const effectiveDuration = showReducedLoader ? 1500 : maximumDuration;
     const effectiveMinimum = showReducedLoader ? 500 : minimumDuration;
 
@@ -50,7 +44,6 @@ export const DomainPreloader: React.FC<DomainPreloaderProps> = ({
         maximumDuration: effectiveDuration,
     });
 
-    // Handle scroll lock
     useEffect(() => {
         const originalOverflow = document.body.style.overflow;
         const originalPosition = document.body.style.position;
@@ -67,16 +60,12 @@ export const DomainPreloader: React.FC<DomainPreloaderProps> = ({
         };
     }, []);
 
-    // Handle completion
     useEffect(() => {
         if (progress >= 100 && !completionFiredRef.current) {
             completionFiredRef.current = true;
             setIsComplete(true);
             setIsExiting(true);
-
-            // Mark as shown for this session
             sessionStorage.setItem('siteLoaderShown', 'true');
-
             onComplete();
         }
     }, [progress, onComplete]);
@@ -93,40 +82,41 @@ export const DomainPreloader: React.FC<DomainPreloaderProps> = ({
             className={`domain-preloader ${isExiting ? 'domain-preloader--exiting' : ''} ${isComplete ? 'domain-preloader--complete' : ''}`}
             style={cssVariables}
         >
-            {/* Background layers */}
+            {/* Cyberpunk Grid Background */}
             <div className='domain-preloader__background' />
             <div className='domain-preloader__grid' />
-            <div className='domain-preloader__gradient-orb domain-preloader__gradient-orb--primary' />
-            <div className='domain-preloader__gradient-orb domain-preloader__gradient-orb--secondary' />
+            
+            {/* Glowing Ambient Orbs */}
+            <div className='domain-preloader__ambient-orb domain-preloader__ambient-orb--1' />
+            <div className='domain-preloader__ambient-orb domain-preloader__ambient-orb--2' />
 
-            {/* Falling money animation */}
-            <FallingMoney
-                symbols={config.fallingSymbols}
-                primaryColor={config.primaryColor}
-                secondaryColor={config.secondaryColor}
-            />
-
-            {/* Main content */}
-            <div className='domain-preloader__content'>
-                {/* Header */}
+            {/* Futuristic Glass Container */}
+            <div className='domain-preloader__glass-card'>
+                {/* Header Section */}
                 <div className='domain-preloader__header'>
+                    <div className='domain-preloader__badge'>
+                        <span className='domain-preloader__badge-dot' />
+                        SECURE TRADING LINK ESTABLISHED
+                    </div>
                     <h1 className='domain-preloader__title' style={{ color: config.accentColor }}>
-                        {config.welcomeText}
+                        {config.siteName || 'ProfitHub'}
                     </h1>
                     <p className='domain-preloader__subtitle' style={{ color: config.primaryColor }}>
-                        {config.subtitle}
+                        {config.subtitle || 'Premium Automated Options Trading'}
                     </p>
                 </div>
 
-                {/* Circular loader */}
-                <CircularLoader
-                    progress={progress}
-                    primaryColor={config.primaryColor}
-                    secondaryColor={config.secondaryColor}
-                    accentColor={config.accentColor}
-                    siteName={config.siteName}
-                    isComplete={isComplete}
-                />
+                {/* Circular Pulse Ring & Percentage */}
+                <div className='domain-preloader__ring-wrapper'>
+                    <CircularLoader
+                        progress={progress}
+                        primaryColor={config.primaryColor}
+                        secondaryColor={config.secondaryColor}
+                        accentColor={config.accentColor}
+                        siteName=''
+                        isComplete={isComplete}
+                    />
+                </div>
 
                 {/* Progress bar */}
                 <LoadingProgress
@@ -144,11 +134,12 @@ export const DomainPreloader: React.FC<DomainPreloaderProps> = ({
                     isComplete={isComplete}
                 />
 
-                {/* Footer */}
-                <div className='domain-preloader__footer' style={{ color: `${config.accentColor}60` }}>
-                    {config.footerText}
+                {/* Footer Disclaimer */}
+                <div className='domain-preloader__footer' style={{ color: `${config.accentColor}40` }}>
+                    {config.footerText || 'ProfitHub Secure Infrastructure v2.4.0'}
                 </div>
             </div>
         </div>
     );
 };
+export default DomainPreloader;

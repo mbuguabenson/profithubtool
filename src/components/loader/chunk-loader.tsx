@@ -1,4 +1,3 @@
-import React from 'react';
 import { TrendingUp } from '@/components/startup-loader/loader-icons';
 import './chunk-loader.scss';
 

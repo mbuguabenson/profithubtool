@@ -153,6 +153,17 @@ export const domainLoaderConfig: Record<string, DomainLoaderConfig> = {
         accentColor: '#ffd700',
         backgroundColor: '#030712',
     }),
+    'profithub.co.ke': createLoaderConfig(
+        'profithub.co.ke',
+        'ProfitHub',
+        {
+            primaryColor: '#f5c542',
+            secondaryColor: '#d69e2e',
+            accentColor: '#ffffff',
+            backgroundColor: '#07070a',
+        },
+        'Premium Automated Options Trading'
+    ),
     localhost: createLoaderConfig(
         'localhost',
         'Dev Trading Platform',

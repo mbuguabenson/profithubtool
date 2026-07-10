@@ -55,14 +55,11 @@ const Layout = observer(() => {
 
             // Skip disabled accounts when checking for missing currency
             const accounts = api_accounts.flat();
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            let detected_currency = '';
             const hasMissingCurrency = accounts.some(data => {
                 if (!allCurrencies.has(data.currency)) {
                     sessionStorage.setItem('query_param_currency', data.currency);
                     return true;
                 }
-                detected_currency = data.currency;
                 return false;
             });
 
@@ -149,7 +146,7 @@ const Layout = observer(() => {
                 'quick-strategy-active': is_quick_strategy_active && !isDesktop,
             })}
         >
-            {!isCallbackPage && <AppHeader isAuthenticating={isAuthenticating || !isInitialAuthCheckComplete} />}
+            {!isCallbackPage && <AppHeader />}
             <Body>
                 <Outlet />
             </Body>
