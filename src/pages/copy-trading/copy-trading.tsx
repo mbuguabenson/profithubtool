@@ -4,7 +4,7 @@ import CopyTradingManager from './copy-trading-manager';
 import { getGlobalCopyTradingManager } from './copy-trading-manager-singleton';
 import Dialog from '@/components/shared_ui/dialog';
 import { useStore } from '@/hooks/useStore';
-import { LegacyWSAdapter } from '@/adapters/legacy-ws-adapter';
+import { getAppId, isProduction } from '@/components/shared/utils/config/config';
 import './copy-trading.scss';
 
 const updateClientCounts = (manager: any) => {
@@ -442,22 +442,15 @@ const CopyTrading = observer(() => {
             }
         } catch {}
 
-        const webSS = () => {
-            // Build token list from localStorage accounts mapping
+        const updateAccountDetails = async () => {
             const accounts_list = JSON.parse(localStorage.getItem('accountsList') || '{}');
-            const tokens: string[] = Object.keys(accounts_list)
-                .map(k => accounts_list[k])
-                .filter(Boolean);
-
-            // Also check for tokens in copyTokensArray as fallback
+            const tokens = Object.keys(accounts_list).map(k => accounts_list[k]).filter(Boolean);
+            
             const copyTokensArray = JSON.parse(localStorage.getItem('copyTokensArray') || '[]');
-            const additionalTokens = copyTokensArray.map((item: any) => item.token).filter(Boolean);
-            tokens.push(...additionalTokens);
-
-            let ws: WebSocket | null = null;
-            let reconnectAttempts = 0;
-            let pingTimer: number | null = null;
-
+            tokens.push(...copyTokensArray);
+            
+            const uniqueTokens = Array.from(new Set(tokens.filter(Boolean)));
+            
             const setLoginId = (loginid: string | null) => {
                 const loginIdEl = document.getElementById('login-id');
                 if (loginIdEl) loginIdEl.textContent = loginid ? String(loginid) : '---';
@@ -468,155 +461,72 @@ const CopyTrading = observer(() => {
                 if (balIdEl) balIdEl.textContent = text;
             };
 
-            const startPing = () => {
-                stopPing();
-                // @ts-ignore
-                pingTimer = window.setInterval(() => {
-                    if (ws && ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({ ping: 1 }));
-                    }
-                }, 30000);
-            };
-            const stopPing = () => {
-                if (pingTimer) {
-                    clearInterval(pingTimer);
-                    pingTimer = null;
-                }
-            };
+            if (uniqueTokens.length === 0) {
+                setLoginId('No tokens');
+                setBalance('******');
+                return;
+            }
 
-            const connect = () => {
-                ws = new LegacyWSAdapter() as unknown as WebSocket;
+            const appId = getAppId?.() ?? localStorage.getItem('APP_ID') ?? '1069';
+            const environment = isProduction() ? 'production' : 'staging';
+            const baseURL = environment === 'production' ? 'https://api.derivws.com/trading/v1/' : 'https://staging-api.derivws.com/trading/v1/';
 
-                ws.addEventListener('open', () => {
-                    reconnectAttempts = 0;
-                    startPing();
-                    authorize();
-                });
+            let foundRealAccount = false;
 
-                ws.addEventListener('close', () => {
-                    stopPing();
-                    scheduleReconnect();
-                });
+            for (const token of uniqueTokens) {
+                try {
+                    const response = await fetch(`${baseURL}options/accounts`, {
+                        method: 'GET',
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            'Deriv-App-ID': appId,
+                        },
+                    });
 
-                ws.addEventListener('error', () => {
-                    stopPing();
-                    scheduleReconnect();
-                });
-
-                ws.addEventListener('message', evt => {
-                    const ms = JSON.parse(evt.data);
-                    const req_id = ms?.echo_req?.req_id;
-                    const error = ms?.error;
-
-                    if (error) {
-                        const errorMsg = `Error: ${error.message || 'Unknown error'}${error.code ? ` (${error.code})` : ''}`;
-                        setLoginId('API Error');
-                        setBalance(errorMsg);
-                        return;
-                    }
-                    if (req_id === 2111 && ms.authorize?.account_list) {
-                        const list = ms.authorize.account_list as Array<any>;
-                        let realLogin: string | null = null;
-
-                        // CRITICAL: Check if special CR account (CR6779123) should be displayed
+                    if (response.ok) {
+                        const data = await response.json();
+                        const accounts = data?.data || [];
+                        
                         const showAsCR = typeof window !== 'undefined' ? localStorage.getItem('show_as_cr') : null;
                         const isSpecialCR = showAsCR === 'CR6779123';
+                        let realAcc = null;
 
-                        // If special CR is active, prioritize CR6779123
                         if (isSpecialCR) {
-                            const crAccount = list.find((acc: any) => acc.loginid === 'CR6779123');
-                            if (crAccount) {
-                                realLogin = 'CR6779123';
-                            }
+                            realAcc = accounts.find((acc: any) => acc.account_id === 'CR6779123');
+                        }
+                        if (!realAcc) {
+                            realAcc = accounts.find((acc: any) => !acc.account_id.startsWith('VR') && !acc.account_id.startsWith('VRT'));
                         }
 
-                        // If not found or not special CR, find first real account
-                        if (!realLogin) {
-                            for (const acc of list) {
-                                if (
-                                    (acc.currency_type === 'fiat' || String(acc.loginid).startsWith('CR')) &&
-                                    acc.is_virtual === 0
-                                ) {
-                                    realLogin = acc.loginid;
-                                    break;
-                                }
+                        if (realAcc) {
+                            localStorage.setItem('cr_loginid', realAcc.account_id);
+                            const active_loginid = localStorage.getItem('active_loginid') || '';
+                            setLoginId(active_loginid?.startsWith('VR') || isSpecialCR ? `CR: ${realAcc.account_id}` : realAcc.account_id);
+                            
+                            let balanceVal = typeof realAcc.balance === 'number' ? realAcc.balance : parseFloat(realAcc.balance || '0');
+                            
+                            if (isSpecialCR && client?.all_accounts_balance?.accounts?.['CR6779123']) {
+                                const balanceData = client.all_accounts_balance.accounts['CR6779123'];
+                                balanceVal = parseFloat(balanceData.balance?.toString() || '0');
                             }
-                        }
-
-                        if (realLogin) {
-                            localStorage.setItem('cr_loginid', String(realLogin));
-                        }
-                        const active_loginid = localStorage.getItem('active_loginid') || '';
-                        setLoginId(
-                            realLogin
-                                ? active_loginid?.startsWith('VR') || isSpecialCR
-                                    ? `CR: ${realLogin}`
-                                    : String(realLogin)
-                                : null
-                        );
-                        if (realLogin) {
-                            // For special CR account, get balance from all_accounts_balance if available
-                            if (isSpecialCR && client?.all_accounts_balance?.accounts?.['CR7988801']) {
-                                const balanceData = client.all_accounts_balance.accounts['CR7988801'];
-                                const balanceNum = parseFloat(balanceData.balance?.toString() || '0');
-                                const balance = balanceNum.toFixed(2);
-                                const currency = balanceData.currency || 'USD';
-                                setBalance(`${balance} ${currency}`);
-                            } else {
-                                // Fallback to API call for normal accounts or if balance not available
-                                getBalance(realLogin);
-                            }
+                            
+                            setBalance(`${balanceVal.toFixed(2)} ${realAcc.currency || 'USD'}`);
+                            foundRealAccount = true;
+                            break;
                         }
                     }
-                    if (req_id === 2112 && ms.balance) {
-                        // CRITICAL: For special CR account, use calculated balance from all_accounts_balance
-                        const showAsCR = typeof window !== 'undefined' ? localStorage.getItem('show_as_cr') : null;
-                        const isSpecialCR = showAsCR === 'CR7988801';
-
-                        if (isSpecialCR && client?.all_accounts_balance?.accounts?.['CR6779123']) {
-                            const balanceData = client.all_accounts_balance.accounts['CR6779123'];
-                            const balanceNum = parseFloat(balanceData.balance?.toString() || '0');
-                            const balance = balanceNum.toFixed(2);
-                            const currency = balanceData.currency || 'USD';
-                            setBalance(`${balance} ${currency}`);
-                            return; // Don't use API balance for special CR
-                        }
-
-                        // Use API balance for normal accounts
-                        const balance = ms.balance.balance;
-                        const currency = ms.balance.currency;
-                        setBalance(`${balance} ${currency}`);
-                    }
-                });
-            };
-
-            const scheduleReconnect = () => {
-                const delay = Math.min(30000, 1000 * Math.pow(2, reconnectAttempts++));
-                setTimeout(() => connect(), delay);
-            };
-
-            const authorize = () => {
-                if (!ws || ws.readyState === WebSocket.CLOSED) return;
-
-                // Check if we have any tokens
-                if (!tokens || tokens.length === 0) {
-                    setLoginId('No tokens');
-                    setBalance('******');
-                    return;
+                } catch (e) {
+                    console.error('Error fetching accounts for token:', e);
                 }
+            }
 
-                const msg = JSON.stringify({ authorize: 'MULTI', tokens, req_id: 2111 });
-                ws.send(msg);
-            };
-
-            const getBalance = (loginid: string) => {
-                if (!ws || ws.readyState === WebSocket.CLOSED) return;
-                const msg = JSON.stringify({ balance: 1, loginid, req_id: 2112 });
-                ws.send(msg);
-            };
-
-            connect();
+            if (!foundRealAccount) {
+                setLoginId('CR — not linked yet');
+                setBalance('******');
+            }
         };
+
+        const detailsInterval = setInterval(updateAccountDetails, 10000);
 
         // Update counts periodically
         const updateInterval = setInterval(() => {
@@ -627,7 +537,7 @@ const CopyTrading = observer(() => {
 
         // Initialize everything
         renderTable();
-        webSS();
+        updateAccountDetails();
 
         // Initial update
         setTimeout(() => {
@@ -639,6 +549,7 @@ const CopyTrading = observer(() => {
         // Cleanup
         return () => {
             clearInterval(updateInterval);
+            clearInterval(detailsInterval);
         };
     }, [client]);
 
