@@ -394,25 +394,50 @@ class APIBase {
     getActiveSymbols = async () => {
         let active_symbols: any[] = [];
 
-        // 1. Try to fetch active symbols via the new REST API
+        // 1. Try to fetch active symbols via the new public WS
         try {
-            const appId = getAppId?.() ?? localStorage.getItem('APP_ID') ?? '1069';
-            const environment = isProduction() ? 'production' : 'staging';
-            const baseURL = environment === 'production' ? 'https://api.derivws.com/trading/v1/' : 'https://staging-api.derivws.com/trading/v1/';
-
-            const response = await fetch(`${baseURL}options/active-symbols`, {
-                method: 'GET',
-                headers: {
-                    'Deriv-App-ID': appId,
-                },
+            active_symbols = await new Promise<any[]>((resolve, reject) => {
+                const environment = isProduction() ? 'production' : 'staging';
+                const wsURL = environment === 'production'
+                    ? 'wss://api.derivws.com/trading/v1/options/ws/public'
+                    : 'wss://staging-api.derivws.com/trading/v1/options/ws/public';
+                
+                const ws = new WebSocket(wsURL);
+                
+                ws.onopen = () => {
+                    ws.send(JSON.stringify({ active_symbols: 'brief' }));
+                };
+                
+                ws.onmessage = (event) => {
+                    try {
+                        const response = JSON.parse(event.data);
+                        if (response.active_symbols) {
+                            ws.close();
+                            resolve(response.active_symbols);
+                        } else if (response.error) {
+                            ws.close();
+                            reject(new Error(response.error.message || 'API error'));
+                        }
+                    } catch (e) {
+                        ws.close();
+                        reject(e);
+                    }
+                };
+                
+                ws.onerror = (err) => {
+                    ws.close();
+                    reject(err);
+                };
+                
+                setTimeout(() => {
+                    if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+                        ws.close();
+                        reject(new Error('Timeout'));
+                    }
+                }, 5000);
             });
-
-            if (response.ok) {
-                const result = await response.json();
-                active_symbols = result?.data || [];
-            }
         } catch (e) {
-            console.warn('[APIBase] REST active symbols fetch failed, will try WebSocket:', e);
+            console.warn('[APIBase] Public WS active symbols fetch failed, will try main WebSocket:', e);
         }
 
         // 2. Fallback to WebSocket if REST failed or returned empty

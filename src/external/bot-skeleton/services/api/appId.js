@@ -90,28 +90,47 @@ export const generateDerivApiInstance = async (forceNew = false) => {
             const originalSend = deriv_api.send;
             deriv_api.send = async function (request) {
                 if (request && request.active_symbols) {
-                    console.log('[DerivAPI Wrapper] Intercepting active_symbols request and fetching via REST');
-                    try {
-                        const appId = localStorage.getItem('APP_ID') || '1069';
+                    console.log('[DerivAPI Wrapper] Intercepting active_symbols request and fetching via public WS');
+                    return new Promise((resolve) => {
                         const environment = window.location.hostname.includes('staging') ? 'staging' : 'production';
-                        const baseURL = environment === 'production' ? 'https://api.derivws.com/trading/v1/' : 'https://staging-api.derivws.com/trading/v1/';
+                        const wsURL = environment === 'production'
+                            ? 'wss://api.derivws.com/trading/v1/options/ws/public'
+                            : 'wss://staging-api.derivws.com/trading/v1/options/ws/public';
                         
-                        const response = await fetch(`${baseURL}options/active-symbols`, {
-                            method: 'GET',
-                            headers: {
-                                'Deriv-App-ID': appId,
-                            },
-                        });
+                        const ws = new WebSocket(wsURL);
                         
-                        if (response.ok) {
-                            const result = await response.json();
-                            return {
-                                active_symbols: result?.data || [],
-                            };
-                        }
-                    } catch (e) {
-                        console.error('[DerivAPI Wrapper] REST active_symbols fetch failed:', e);
-                    }
+                        ws.onopen = () => {
+                            ws.send(JSON.stringify(request));
+                        };
+                        
+                        ws.onmessage = (event) => {
+                            try {
+                                const response = JSON.parse(event.data);
+                                if (response.msg_type === 'active_symbols' || response.active_symbols) {
+                                    ws.close();
+                                    resolve(response);
+                                }
+                            } catch (e) {
+                                console.error('[DerivAPI Wrapper] Failed to parse active_symbols response:', e);
+                                ws.close();
+                                resolve({ error: { message: 'Invalid response format' } });
+                            }
+                        };
+                        
+                        ws.onerror = (err) => {
+                            console.error('[DerivAPI Wrapper] public WS active_symbols error:', err);
+                            ws.close();
+                            resolve({ error: { message: 'Connection error' } });
+                        };
+                        
+                        // Timeout safety
+                        setTimeout(() => {
+                            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+                                ws.close();
+                                resolve({ error: { message: 'Timeout' } });
+                            }
+                        }, 5000);
+                    });
                 }
                 return originalSend.call(this, request);
             };
