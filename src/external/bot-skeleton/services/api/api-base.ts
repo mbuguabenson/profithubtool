@@ -3,7 +3,7 @@ import { getAccountId, getAccountType, isDemoAccount, removeUrlParameter } from 
 /* [/AI] */
 import CommonStore from '@/stores/common-store';
 import { DerivWSAccountsService } from '@/services/derivws-accounts.service';
-import { getAppId, isProduction } from '@/components/shared/utils/config/config';
+import { isProduction } from '@/components/shared/utils/config/config';
 import { TAuthData } from '@/types/api-types';
 import { clearAuthData } from '@/utils/auth-utils';
 import { handleBackendError, isBackendError } from '@/utils/error-handler';
