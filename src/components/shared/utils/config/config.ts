@@ -20,8 +20,8 @@ export const STAGING_DOMAINS = {
 // We use the V3 WebSocket endpoint because the new V1 trading API endpoints require
 // specific application whitelisting or authenticated OTP flows to connect.
 export const WS_SERVERS = {
-    STAGING: 'wss://ws.derivws.com/websockets/v3?app_id=1069',
-    PRODUCTION: 'wss://ws.derivws.com/websockets/v3?app_id=1069',
+    STAGING: 'wss://staging-api.derivws.com/trading/v1/options/ws/public',
+    PRODUCTION: 'wss://api.derivws.com/trading/v1/options/ws/public',
 } as const;
 
 // =============================================================================
@@ -44,8 +44,10 @@ export const getAppId = () => {
 };
 
 const getDefaultServerURL = () => {
-    const appId = getAppId();
-    return `wss://ws.derivws.com/websockets/v3?app_id=${appId}`;
+    const environment = isProduction() ? 'production' : 'staging';
+    return environment === 'production'
+        ? `wss://api.derivws.com/trading/v1/options/ws/public`
+        : `wss://staging-api.derivws.com/trading/v1/options/ws/public`;
 };
 
 /**
