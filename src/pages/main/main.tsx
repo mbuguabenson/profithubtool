@@ -11,7 +11,6 @@ import Tabs from '@/components/shared_ui/tabs/tabs';
 import TradingViewModal from '@/components/trading-view-chart/trading-view-modal';
 import ProfihubModal from '@/components/profihub-analysis/profihub-modal';
 import { DBOT_TABS, TAB_IDS } from '@/constants/bot-contents';
-import Matches from '@/pages/matches';
 import { api_base, updateWorkspaceName } from '@/external/bot-skeleton';
 import { CONNECTION_STATUS } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
 import { isDbotRTL } from '@/external/bot-skeleton/utils/workspace';
@@ -39,15 +38,11 @@ import './main.scss';
 const ChartWrapper = lazy(() => import('../chart/chart-wrapper'));
 
 const TradingView = lazy(() => import('../tradingview'));
-const ProfihubAnalysis = lazy(() => import('../profihub-analysis'));
 const AnalysisTools = lazy(() => import('../analysis-tool'));
 const CopyTrading = lazy(() => import('../copy-trading'));
-const Strategies = lazy(() => import('../free-bots/strategies'));
 const ProTool = lazy(() => import('../pro-tool'));
-const Dtrader = lazy(() => import('../dtrader'));
 const Signals = lazy(() => import('../signals'));
 const AutoTrades = lazy(() => import('../auto-trades/auto-trades'));
-const ManualTrading = lazy(() => import('../manual-trading/manual-trading'));
 const ScannerPage = lazy(() => import('../scanner/scanner'));
 import TradingBots from '../free-bots/trading-bots';
 
@@ -80,25 +75,20 @@ const AppWrapper = observer(() => {
         [key: string]: string;
     };
     const { clear } = summary_card;
-    const { DASHBOARD, BOT_BUILDER, STRATEGIES, TRADING_BOTS } = DBOT_TABS;
+    const { DASHBOARD, BOT_BUILDER, TRADING_BOTS } = DBOT_TABS;
     const init_render = React.useRef(true);
     const pollTimeoutId = React.useRef<ReturnType<typeof setTimeout> | null>(null);
     const hash = [
         'dashboard',
-        'matches',
         'bot_builder',
         'chart',
         'trading_bots',
         'analysis_tool',
-        'strategies',
         'copy_trading',
-        'dtrader',
         'tradingview',
-        'profihub',
         'tutorials',
         'signals',
         'auto_trades',
-        'manual_trading',
         'scanner',
     ];
     const { isDesktop } = useDevice();
@@ -311,21 +301,7 @@ const AppWrapper = observer(() => {
                             >
                                 <Dashboard handleTabChange={handleTabChange} />
                             </div>
-                            <div
-                                label={
-                                    <>
-                                        <LabelPairedPuzzlePieceTwoCaptionBoldIcon
-                                            height='28px'
-                                            width='28px'
-                                            fill='#f5c542'
-                                        />
-                                        <Localize i18n_default_text='Matches Tool' />
-                                    </>
-                                }
-                                id='id-matches'
-                            >
-                                <Matches />
-                            </div>
+
                             <div
                                 label={
                                     <>
@@ -394,25 +370,7 @@ const AppWrapper = observer(() => {
                                     <AnalysisTools />
                                 </Suspense>
                             </div>
-                            <div
-                                label={
-                                    <>
-                                        <LabelPairedPuzzlePieceTwoCaptionBoldIcon
-                                            height='28px'
-                                            width='28px'
-                                            fill='#f5c542'
-                                        />
-                                        <Localize i18n_default_text='Strategies' />
-                                    </>
-                                }
-                                id='id-strategies'
-                            >
-                                <Suspense
-                                    fallback={<ChunkLoader message={localize('Please wait, loading Strategies...')} />}
-                                >
-                                    <Strategies />
-                                </Suspense>
-                            </div>
+
                             <div
                                 label={
                                     <>
@@ -434,25 +392,7 @@ const AppWrapper = observer(() => {
                                     <CopyTrading />
                                 </Suspense>
                             </div>
-                            <div
-                                label={
-                                    <>
-                                        <LabelPairedChartLineCaptionRegularIcon
-                                            height='28px'
-                                            width='28px'
-                                            fill='#f5c542'
-                                        />
-                                        <Localize i18n_default_text='DTrader' />
-                                    </>
-                                }
-                                id='id-dtrader'
-                            >
-                                <Suspense
-                                    fallback={<ChunkLoader message={localize('Please wait, loading DTrader...')} />}
-                                >
-                                    <Dtrader />
-                                </Suspense>
-                            </div>
+
                             <div
                                 label={
                                     <>
@@ -466,25 +406,6 @@ const AppWrapper = observer(() => {
                                     fallback={<ChunkLoader message={localize('Please wait, loading TradingView...')} />}
                                 >
                                     <TradingView />
-                                </Suspense>
-                            </div>
-                            <div
-                                label={
-                                    <>
-                                        <LabelPairedPuzzlePieceTwoCaptionBoldIcon
-                                            height='28px'
-                                            width='28px'
-                                            fill='#f5c542'
-                                        />
-                                        <Localize i18n_default_text='Profihub Analysis' />
-                                    </>
-                                }
-                                id='id-profihub'
-                            >
-                                <Suspense
-                                    fallback={<ChunkLoader message={localize('Please wait, loading Profihub Analysis...')} />}
-                                >
-                                    <ProfihubAnalysis />
                                 </Suspense>
                             </div>
 
@@ -540,21 +461,7 @@ const AppWrapper = observer(() => {
                                 </Suspense>
                             </div>
 
-                            <div
-                                label={
-                                    <>
-                                        <LabelPairedPuzzlePieceTwoCaptionBoldIcon height='28px' width='28px' fill='#f5c542' />
-                                        <Localize i18n_default_text='Manual Trading' />
-                                    </>
-                                }
-                                id='id-manual-trading'
-                            >
-                                <Suspense
-                                    fallback={<ChunkLoader message={localize('Please wait, loading Manual Trading...')} />}
-                                >
-                                    <ManualTrading />
-                                </Suspense>
-                            </div>
+
 
                             <div
                                 label={
@@ -576,18 +483,16 @@ const AppWrapper = observer(() => {
                 </div>
             </div>
             <DesktopWrapper>
-                {active_tab !== DBOT_TABS.DTRADER && (
-                    <div className='main__run-strategy-wrapper'>
-                        {active_tab !== DBOT_TABS.TRADING_BOTS && <RunStrategy />}
-                        <RunPanel />
-                    </div>
-                )}
+                <div className='main__run-strategy-wrapper'>
+                    {active_tab !== DBOT_TABS.TRADING_BOTS && <RunStrategy />}
+                    <RunPanel />
+                </div>
                 <ChartModal />
                 <TradingViewModal />
                 <ProfihubModal />
             </DesktopWrapper>
             <MobileWrapper>
-                {!is_open && active_tab !== DBOT_TABS.STRATEGIES && active_tab !== DBOT_TABS.DTRADER && <RunPanel />}
+                {!is_open && <RunPanel />}
             </MobileWrapper>
 
             <Dialog

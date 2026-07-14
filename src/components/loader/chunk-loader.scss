@@ -1,133 +1,125 @@
-// ==========================================
-// Premium Redesigned Chunk Loader Styles
-// ==========================================
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
+// ─── Chunk Loader ─────────────────────────────────────────────────────────────
 .chunk-loader-overlay {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 280px;
+    min-height: 100vh;
     width: 100%;
-    padding: 24px;
     box-sizing: border-box;
+    background:
+        radial-gradient(ellipse 70% 60% at 20% 20%, rgba(59, 130, 246, 0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 60%),
+        #060b18;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
 }
 
-.chunk-loader-card {
-    background: rgba(10, 15, 26, 0.45);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 20px;
-    padding: 32px;
+.chunk-loader-center {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 100%;
-    max-width: 320px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    box-sizing: border-box;
+    justify-content: center;
+    gap: 32px;
     text-align: center;
+    animation: cl-enter 0.5s cubic-bezier(0.2, 0, 0, 1) forwards;
 }
 
-.chunk-loader-spinner-wrapper {
+@keyframes cl-enter {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+// ─── Spinner ──────────────────────────────────────────────────────────────────
+.loader-circle {
     position: relative;
-    width: 72px;
-    height: 72px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 20px;
+    width: 110px;
+    height: 110px;
+    filter: drop-shadow(0 0 28px rgba(59, 130, 246, 0.4));
 }
 
-.spinner-outer-ring {
+.loading-circle {
     position: absolute;
-    inset: 0;
+    top: 50%;
+    left: 50%;
     border-radius: 50%;
-    border: 2px solid transparent;
-    border-top-color: #00f5a0;
-    border-bottom-color: #00d9ff;
-    animation: spinClockwise 1.5s cubic-bezier(0.5, 0.1, 0.4, 0.9) infinite;
+    border-style: solid;
+    border-color: transparent;
+    transform: translate(-50%, -50%);
+    animation: cl-spin linear infinite;
 }
 
-.spinner-inner-ring {
+.sp1 {
+    width: 110px;
+    height: 110px;
+    border-width: 3px;
+    border-top-color: #3b82f6;
+    border-right-color: rgba(59, 130, 246, 0.3);
+    animation-duration: 1.4s;
+}
+
+.sp2 {
+    width: 78px;
+    height: 78px;
+    border-width: 3px;
+    border-top-color: #10b981;
+    border-left-color: rgba(16, 185, 129, 0.3);
+    animation-duration: 1s;
+    animation-direction: reverse;
+}
+
+.sp3 {
+    width: 46px;
+    height: 46px;
+    border-width: 2px;
+    border-bottom-color: #8b5cf6;
+    border-right-color: rgba(139, 92, 246, 0.4);
+    animation-duration: 0.75s;
+}
+
+// Inner logo dot
+.loader-circle::after {
+    content: '';
     position: absolute;
-    inset: 10px;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    border: 1.5px solid transparent;
-    border-left-color: rgba(59, 130, 246, 0.4);
-    border-right-color: rgba(20, 241, 149, 0.4);
-    animation: spinCounterClockwise 1s linear infinite;
+    background: radial-gradient(circle at 35% 35%, #60a5fa, #1d4ed8);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.7);
+    transform: translate(-50%, -50%);
+    animation: cl-pulse 2s ease-in-out infinite;
 }
 
-.spinner-core-icon {
-    color: #00f5a0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    filter: drop-shadow(0 0 4px rgba(0, 245, 160, 0.5));
-    animation: pulseCore 1.5s ease-in-out infinite alternate;
+@keyframes cl-spin {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
-@keyframes pulseCore {
-    from {
-        transform: scale(0.92);
-        opacity: 0.8;
-    }
-    to {
-        transform: scale(1.08);
-        opacity: 1;
-    }
+@keyframes cl-pulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 20px rgba(59,130,246,0.7); }
+    50% { transform: translate(-50%, -50%) scale(1.2); box-shadow: 0 0 32px rgba(59,130,246,0.9); }
 }
 
+// ─── Text ─────────────────────────────────────────────────────────────────────
 .chunk-loader-text {
     color: rgba(255, 255, 255, 0.85);
-    font-size: 13px;
+    font-size: 0.9rem;
     font-weight: 600;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
     line-height: 1.5;
-    margin-bottom: 16px;
-    max-width: 220px;
+    max-width: 280px;
+
+    // Animated gradient shimmer on text
+    background: linear-gradient(90deg, rgba(255,255,255,0.75) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.75) 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: cl-text-shimmer 2.5s linear infinite;
 }
 
-.chunk-loader-indicator {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(0, 245, 160, 0.06);
-    border: 1px solid rgba(0, 245, 160, 0.15);
-    padding: 4px 10px;
-    border-radius: 100px;
-    
-    .indicator-dot {
-        width: 4px;
-        height: 4px;
-        border-radius: 50%;
-        background: #22c55e;
-        box-shadow: 0 0 6px #22c55e;
-        animation: activeDot 1.2s infinite alternate;
-    }
-
-    .indicator-label {
-        color: #00f5a0;
-        font-size: 8px;
-        font-weight: 800;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-    }
-}
-
-@keyframes activeDot {
-    from { opacity: 0.4; }
-    to { opacity: 1; }
-}
-
-@keyframes spinClockwise {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-@keyframes spinCounterClockwise {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(-360deg); }
+@keyframes cl-text-shimmer {
+    to { background-position: 200% center; }
 }

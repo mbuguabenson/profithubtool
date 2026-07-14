@@ -70,10 +70,12 @@ const IframeWrapper: React.FC<IframeWrapperProps> = observer(({ src, title, clas
             }
         };
 
+        const expectedOrigin = process.env.DTRADER_PROXY_URL || 'https://deriv-dtrader.vercel.app';
+
         // Listen for messages from iframe (auth requests and trade events)
         const handleMessage = (event: MessageEvent) => {
-            // Security: Optionally validate event.origin
-            // if (event.origin !== 'https://hyperbot-indol.vercel.app') return;
+            // Security: validate event.origin when using the DTrader proxy
+            if (event.origin !== expectedOrigin) return;
 
             // Debug: Log all messages from iframe
             if (event.data && event.data.type) {

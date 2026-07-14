@@ -12,12 +12,7 @@ configure({ isolateGlobalState: true });
 // Perform version check FIRST - before any other operations
 performVersionCheck();
 
-import StartupLoader from '@/components/startup-loader';
-
-// Removed AnalyticsInitializer() call - analytics dependency removed
-
+// Render the app directly; startup splash is handled inside AppRoot
 ReactDOM.createRoot(document.getElementById('root')!).render(
-    <StartupLoader>
-        <AuthWrapper />
-    </StartupLoader>
+    <AuthWrapper />
 );

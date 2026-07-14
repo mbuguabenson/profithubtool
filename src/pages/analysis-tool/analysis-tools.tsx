@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import AnalysisTool from './analysis-tool';
 import DpTools from '../dp-tools';
-import Dcircles from '../dtrader/dcircles/dcircles';
+import Dcircles from './dcircles';
 import AllAnalysis from './all-analysis';
 import Signals from '../signals';
 import TickAnalyser from './tick-analyser';
@@ -721,6 +721,14 @@ const AnalysisTools: React.FC = () => {
                 >
                     <div className='analysis-tools__card-content'>
                         <span className='analysis-tools__card-label'>Tick Analyser</span>
+                    </div>
+                </div>
+                <div
+                    className={`analysis-tools__card analysis-tools__card--light ${active_tool === 'analysis-tool' ? 'analysis-tools__card--active' : ''}`}
+                    onClick={() => handleCardClick('analysis-tool')}
+                >
+                    <div className='analysis-tools__card-content'>
+                        <span className='analysis-tools__card-label'>ProfitHub Analysis</span>
                     </div>
                 </div>
             </div>

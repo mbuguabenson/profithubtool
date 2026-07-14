@@ -86,54 +86,8 @@ export const generateDerivApiInstance = async (forceNew = false) => {
             // Store the instance immediately (don't wait for connection)
             derivApiInstance = deriv_api;
 
-            // Intercept active_symbols calls to fetch them via REST API
-            const originalSend = deriv_api.send;
-            deriv_api.send = async function (request) {
-                if (request && request.active_symbols) {
-                    console.log('[DerivAPI Wrapper] Intercepting active_symbols request and fetching via public WS');
-                    return new Promise((resolve) => {
-                        const environment = window.location.hostname.includes('staging') ? 'staging' : 'production';
-                        const wsURL = environment === 'production'
-                            ? 'wss://api.derivws.com/trading/v1/options/ws/public'
-                            : 'wss://staging-api.derivws.com/trading/v1/options/ws/public';
-                        
-                        const ws = new WebSocket(wsURL);
-                        
-                        ws.onopen = () => {
-                            ws.send(JSON.stringify(request));
-                        };
-                        
-                        ws.onmessage = (event) => {
-                            try {
-                                const response = JSON.parse(event.data);
-                                if (response.msg_type === 'active_symbols' || response.active_symbols) {
-                                    ws.close();
-                                    resolve(response);
-                                }
-                            } catch (e) {
-                                console.error('[DerivAPI Wrapper] Failed to parse active_symbols response:', e);
-                                ws.close();
-                                resolve({ error: { message: 'Invalid response format' } });
-                            }
-                        };
-                        
-                        ws.onerror = (err) => {
-                            console.error('[DerivAPI Wrapper] public WS active_symbols error:', err);
-                            ws.close();
-                            resolve({ error: { message: 'Connection error' } });
-                        };
-                        
-                        // Timeout safety
-                        setTimeout(() => {
-                            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-                                ws.close();
-                                resolve({ error: { message: 'Timeout' } });
-                            }
-                        }, 5000);
-                    });
-                }
-                return originalSend.call(this, request);
-            };
+            // Use the standard websocket connection for all requests to ensure stability and auth context
+
 
             // Intercept and cache authorize calls to prevent redundant round-trip latencies
             const originalAuthorize = deriv_api.authorize;

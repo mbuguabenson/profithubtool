@@ -25,6 +25,7 @@ import {
     AUTO_TRADE_STRATEGY_PRESET_LOOKUP,
 } from './strategy-presets';
 import type { AutoTradeStrategyPreset } from './strategy-presets';
+import { formatLoginDisplay, isLoggedIn } from '@/utils/token-bridge';
 import './auto-trades.scss';
 
 type MartingaleModeType = 'no_martingale' | 'after_one_loss' | 'after_two_losses' | 'custom_consecutive_loss_trigger';
@@ -1117,8 +1118,9 @@ const AutoTrades = observer(() => {
     const [totalPnl, setTotalPnl] = useState(0);
     const [totalTrades, setTotalTrades] = useState(0);
     const [error, setError] = useState<string | null>(null);
-    const [isRunning, setIsRunning] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
+    const [connectedAccount, setConnectedAccount] = useState<string>('');
+    const [sessionConnected, setSessionConnected] = useState(false);
     const [inverseMode, setInverseMode] = useState(() => {
         try {
             return localStorage.getItem('auto_trades_inverseMode') === 'true';
@@ -1272,6 +1274,17 @@ const AutoTrades = observer(() => {
     const unmountedRef = useRef(false);
     const stopTradingRef = useRef<() => void>(() => {});
     const floatingStrategyAlertRef = useRef<FloatingStrategyAlert | null>(null);
+
+    useEffect(() => {
+        const check = () => {
+            const connected = isLoggedIn();
+            setSessionConnected(connected);
+            if (connected) setConnectedAccount(formatLoginDisplay());
+        };
+        check();
+        const iv = setInterval(check, 5000);
+        return () => clearInterval(iv);
+    }, []);
 
     useEffect(() => {
         setAiFabPosition(current => {
@@ -2814,7 +2827,15 @@ const AutoTrades = observer(() => {
                     {/* Header */}
                     <div className='auto-trades-page__header'>
                         <div>
-                            <h1 className='auto-trades-page__title'>Auto Trades</h1>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <h1 className='auto-trades-page__title'>Auto Trades</h1>
+                                {sessionConnected && (
+                                    <div className='auto-trades-account-badge'>
+                                        <span className='auto-trades-account-badge__dot' />
+                                        <span className='auto-trades-account-badge__text'>Connected: {connectedAccount}</span>
+                                    </div>
+                                )}
+                            </div>
                             <p className='auto-trades-page__subtitle'>{resolvedSubtitleTxt}</p>
                         </div>
                         <div className='auto-trades-page__status-dot'>

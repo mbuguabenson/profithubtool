@@ -4,7 +4,7 @@ import IframeWrapper from '@/components/iframe-wrapper';
 const AnalysisTool: React.FC = () => {
     return (
         <IframeWrapper
-            src='https://api-binarytool-site.vercel.app/'
+            src='https://analysisprofithub.vercel.app/'
             title='Analysis Tool'
             className='analysis-tool-container'
         />

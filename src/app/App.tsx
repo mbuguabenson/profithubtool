@@ -10,6 +10,7 @@ import { useOAuthCallback } from '@/hooks/useOAuthCallback';
 import { StoreProvider } from '@/hooks/useStore';
 import { OAuthTokenExchangeService } from '@/services/oauth-token-exchange.service';
 import { initializeI18n, localize, TranslationProvider } from '@deriv-com/translations';
+import { getBrandLabel } from '@/components/shared/utils/brand/brand';
 import CoreStoreProvider from './CoreStoreProvider';
 import './app-root.scss';
 
@@ -19,6 +20,7 @@ const AppRoot = lazy(() => import('./app-root'));
 // Translations CDN is optional — requires TRANSLATIONS_CDN_URL, R2_PROJECT_NAME, and CROWDIN_BRANCH_NAME env vars.
 // Without these, the app defaults to English. See user-guide/03-white-labeling.md#translations for setup instructions.
 const i18nInstance = initializeI18n({ cdnUrl: '' });
+const brandLabel = getBrandLabel();
 
 /**
  * Component wrapper to handle language URL parameter
@@ -35,7 +37,7 @@ const router = createBrowserRouter(
             path='/'
             element={
                 <Suspense
-                    fallback={<ChunkLoader message={localize('Please wait while we connect to the server...')} />}
+                    fallback={<ChunkLoader message={`Loading ${brandLabel}...`} />}
                 >
                     <TranslationProvider defaultLang='EN' i18nInstance={i18nInstance}>
                         <LanguageHandler>

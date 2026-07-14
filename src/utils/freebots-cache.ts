@@ -49,18 +49,21 @@ export const setCachedXml = async (file: string, xml: string) => {
 };
 
 export const fetchXmlWithCache = async (file: string, basePath?: string): Promise<string | null> => {
+    const isUpload = basePath?.startsWith('/xml-uploads/') || false;
     const cacheKey = basePath ? `${basePath}${file}` : file;
 
-    // Check memory cache first
-    if (memoryCache.has(cacheKey)) {
+    // Check memory cache first (only if not an upload, to allow real-time development reloading)
+    if (!isUpload && memoryCache.has(cacheKey)) {
         return memoryCache.get(cacheKey)!;
     }
 
-    // Check persistent cache
-    const cached = await getCachedXml(cacheKey);
-    if (cached) {
-        memoryCache.set(cacheKey, cached); // Store in memory for faster access
-        return cached;
+    // Check persistent cache (only if not an upload)
+    if (!isUpload) {
+        const cached = await getCachedXml(cacheKey);
+        if (cached) {
+            memoryCache.set(cacheKey, cached);
+            return cached;
+        }
     }
 
     try {
@@ -72,17 +75,22 @@ export const fetchXmlWithCache = async (file: string, basePath?: string): Promis
             return `${normalizedBase}${sourceFile.split('/').map(encodeURIComponent).join('/')}`;
         };
 
-        const primaryUrl = basePath ? resolveUrl(file, basePath) : resolveUrl(file, getXmlBase());
-        let res = await fetch(primaryUrl);
+        let primaryUrl = basePath ? resolveUrl(file, basePath) : resolveUrl(file, getXmlBase());
+        
+        // Add cache-busting timestamp query parameter for xml-uploads
+        if (isUpload) {
+            primaryUrl = `${primaryUrl}?t=${Date.now()}`;
+        }
+        
+        let res = await fetch(primaryUrl, isUpload ? { cache: 'no-cache' } : undefined);
 
         // 2) Fallback: try default /xml/ if the primary fails and it isn't already the /xml/ base
-        if (!res.ok && (!basePath || basePath !== '/xml/')) {
+        if (!res.ok && (!basePath || basePath !== '/xml/') && !isUpload) {
             const fallbackUrl = resolveUrl(file, '/xml/');
             res = await fetch(fallbackUrl);
         }
 
         if (!res.ok) {
-            // Silently handle 404s for missing files (don't spam console)
             if (res.status === 404) {
                 return null;
             }
@@ -90,12 +98,13 @@ export const fetchXmlWithCache = async (file: string, basePath?: string): Promis
         }
         const xml = await res.text();
 
-        // Store in both caches
-        memoryCache.set(cacheKey, xml);
-        await setCachedXml(cacheKey, xml);
+        // Store in both caches (only if not an upload)
+        if (!isUpload) {
+            memoryCache.set(cacheKey, xml);
+            await setCachedXml(cacheKey, xml);
+        }
         return xml;
     } catch (e: any) {
-        // Only log non-404 errors to reduce console noise
         if (e?.message && !e.message.includes('404')) {
             // eslint-disable-next-line no-console
             console.warn('freebots-cache:fetchXmlWithCache error', e);
@@ -117,9 +126,11 @@ export const prefetchAllXmlInBackground = async (files: string[]) => {
     }
 };
 
-const fetchJsonManifest = async (url: string): Promise<TBotsManifestItem[] | null> => {
+const fetchJsonManifest = async (url: string, disableCache = false): Promise<TBotsManifestItem[] | null> => {
     try {
-        const res = await fetch(url, { cache: 'force-cache' });
+        const fetchOptions: RequestInit = disableCache ? { cache: 'no-cache' } : { cache: 'force-cache' };
+        const finalUrl = disableCache ? `${url}?t=${Date.now()}` : url;
+        const res = await fetch(finalUrl, fetchOptions);
         if (!res.ok) return null;
 
         const contentType = res.headers.get('content-type') || '';
@@ -169,7 +180,7 @@ export const getBotsManifest = async (): Promise<TBotsManifestItem[] | null> => 
 
 export const getXmlUploadsManifest = async (): Promise<TBotsManifestItem[] | null> => {
     try {
-        const data = await fetchJsonManifest('/xml-uploads/bots.json');
+        const data = await fetchJsonManifest('/xml-uploads/bots.json', true);
         if (!data) return null;
         return data.map(item => ({ ...item, basePath: '/xml-uploads/' }));
     } catch (e) {

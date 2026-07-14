@@ -204,6 +204,61 @@
     }
 }
 
+// ─── Connected Account Banner ─────────────────────────────────────────────────
+.scanner-account-banner {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    z-index: 20;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(0, 255, 200, 0.35);
+    border-radius: 100px;
+    padding: 6px 14px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 16px rgba(0, 255, 200, 0.1);
+    font-family: 'JetBrains Mono', monospace, Arial, sans-serif;
+    animation: scanner-banner-in 0.4s ease;
+
+    &__dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #22c87a;
+        box-shadow: 0 0 8px #22c87a;
+        animation: scanner-dot-pulse 2s ease-in-out infinite;
+        flex-shrink: 0;
+    }
+
+    &__text {
+        font-size: 0.7rem;
+        color: rgba(255, 255, 255, 0.8);
+        strong { color: #00ffc8; }
+    }
+
+    &__currency {
+        font-size: 0.62rem;
+        font-weight: 700;
+        background: rgba(0, 255, 200, 0.12);
+        color: #00ffc8;
+        padding: 2px 8px;
+        border-radius: 100px;
+        border: 1px solid rgba(0, 255, 200, 0.25);
+    }
+}
+
+@keyframes scanner-banner-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scanner-dot-pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+}
+
 @keyframes scanner-scroll {
     from {
         transform: translateY(0%);

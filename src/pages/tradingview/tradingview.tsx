@@ -1,12 +1,17 @@
 import React from 'react';
-import IframeWrapper from '@/components/iframe-wrapper';
 
 const TradingView: React.FC = () => {
     return (
-        <IframeWrapper
-            src='https://charts.deriv.com/deriv'
+        <iframe
+            id='trading-view-tab-iframe'
+            style={{
+                width: '100%',
+                height: 'calc(100vh - 80px)',
+                border: 'none',
+                background: 'white',
+            }}
+            src='https://charts.deriv.com/deriv?hide-signup=true'
             title='TradingView Charts'
-            className='tradingview-container'
         />
     );
 };

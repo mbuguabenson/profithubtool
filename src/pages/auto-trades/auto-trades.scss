@@ -123,6 +123,40 @@ $at-text-faint: var(--auto-trades-text-faint);
         }
     }
 
+    // Connected account badge
+    .auto-trades-account-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(79, 143, 255, 0.2);
+        border-radius: 100px;
+        padding: 4px 10px;
+        margin-left: 2px;
+        backdrop-filter: blur(10px);
+        font-family: 'JetBrains Mono', monospace;
+
+        &__dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #22c87a;
+            box-shadow: 0 0 6px #22c87a;
+            animation: auto-trades-badge-pulse 2s infinite;
+        }
+
+        &__text {
+            font-size: 0.68rem;
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 600;
+        }
+    }
+
+    @keyframes auto-trades-badge-pulse {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.4; }
+    }
+
     &__status-dot {
         display: flex;
         align-items: center;

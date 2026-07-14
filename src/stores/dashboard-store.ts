@@ -2,6 +2,7 @@ import DOMPurify from 'dompurify';
 import { action, makeObservable, observable, reaction } from 'mobx';
 import { botNotification } from '@/components/bot-notification/bot-notification';
 import { notification_message, NOTIFICATION_TYPE } from '@/components/bot-notification/bot-notification-utils';
+import { recordDiagnosticEvent, setDiagnosticGauge } from '@/utils/diagnostics';
 // Removed TStores import from @deriv/stores/types
 import * as strategy_description from '../constants/quick-strategies';
 import { TDescriptionItem } from '../pages/bot-builder/quick-strategy/types';
@@ -66,6 +67,9 @@ export interface IDashboardStore {
     trading_stop_handlers: { [key: string]: () => void };
     registerTradingStopHandler: (module: string, handler: () => void) => void;
     unregisterTradingStopHandler: (module: string) => void;
+    active_trading_module: string | null;
+    navigation_stop_in_progress: boolean;
+    setActiveTradingModule: (module: string | null) => void;
 }
 
 export default class DashboardStore implements IDashboardStore {
@@ -75,6 +79,8 @@ export default class DashboardStore implements IDashboardStore {
     combined_search: string[] = [];
     bot_builder_symbol: string | null = null;
     trading_stop_handlers: { [key: string]: () => void } = {};
+    active_trading_module: string | null = null;
+    navigation_stop_in_progress = false;
 
     constructor(root_store: RootStore, core: TStores) {
         makeObservable(this, {
@@ -132,6 +138,9 @@ export default class DashboardStore implements IDashboardStore {
             trading_stop_handlers: observable,
             registerTradingStopHandler: action.bound,
             unregisterTradingStopHandler: action.bound,
+            active_trading_module: observable,
+            navigation_stop_in_progress: observable,
+            setActiveTradingModule: action.bound,
         });
         this.root_store = root_store;
         this.core = core;
@@ -432,5 +441,17 @@ export default class DashboardStore implements IDashboardStore {
 
     unregisterTradingStopHandler = (module: string): void => {
         delete this.trading_stop_handlers[module];
+        if (this.active_trading_module === module) {
+            this.active_trading_module = null;
+        }
+    };
+
+    setActiveTradingModule = (module: string | null): void => {
+        this.active_trading_module = module;
+        setDiagnosticGauge('dashboard.active_trading_module', module);
+        recordDiagnosticEvent('dashboard.active_trading_module_changed', { module });
+        if (!module) {
+            this.navigation_stop_in_progress = false;
+        }
     };
 }

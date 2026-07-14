@@ -1,0 +1,65 @@
+[
+  {
+    "name": "ALEXSPEEDBOT  EXPRO",
+    "file": "ALEXSPEEDBOT__EXPRO.xml",
+    "description": "Advanced trading strategy: ALEXSPEEDBOT  EXPRO. Optimized for consistent returns and automated execution.",
+    "difficulty": "Intermediate",
+    "strategy": "Speed Run"
+  },
+  {
+    "name": "AUTO C4 VOLT 🇬🇧 2 🇬🇧 AI PREMIUM ROBOT (2) (1) 1765711647660",
+    "file": "AUTO_C4_VOLT_🇬🇧_2_🇬🇧_AI_PREMIUM_ROBOT_(2)_(1)_1765711647660.xml",
+    "description": "Advanced trading strategy: AUTO C4 VOLT 🇬🇧 2 🇬🇧 AI PREMIUM ROBOT (2) (1) 1765711647660. Optimized for consistent returns and automated execution.",
+    "difficulty": "Advanced",
+    "strategy": "AI Grid"
+  },
+  {
+    "name": "BEST BEGINNER DIFFER bot V2",
+    "file": "BEST_BEGINNER DIFFER bot V2.xml",
+    "description": "Advanced trading strategy: BEST BEGINNER DIFFER bot V2. Optimized for consistent returns and automated execution.",
+    "difficulty": "Beginner",
+    "strategy": "Multi-Strategy"
+  },
+  {
+    "name": "Entrypoint scanner bot",
+    "file": "Entrypoint scanner bot.xml",
+    "description": "Advanced trading strategy: Entrypoint scanner bot. Optimized for consistent returns and automated execution.",
+    "difficulty": "Advanced",
+    "strategy": "Scanner"
+  },
+  {
+    "name": "Entry Point Scanner",
+    "file": "Entry_Point_Scanner.xml",
+    "description": "Advanced trading strategy: Entry Point Scanner. Optimized for consistent returns and automated execution.",
+    "difficulty": "Advanced",
+    "strategy": "Scanner"
+  },
+  {
+    "name": "EXTRA EVEN ODD AI BOT",
+    "file": "EXTRA EVEN ODD AI BOT.xml",
+    "description": "Advanced trading strategy: EXTRA EVEN ODD AI BOT. Optimized for consistent returns and automated execution.",
+    "difficulty": "Intermediate",
+    "strategy": "Even/Odd"
+  },
+  {
+    "name": "FLIPPER AI ROBOT PLUS",
+    "file": "FLIPPER_AI_ROBOT_PLUS.xml",
+    "description": "Advanced trading strategy: FLIPPER AI ROBOT PLUS. Optimized for consistent returns and automated execution.",
+    "difficulty": "Advanced",
+    "strategy": "AI Grid"
+  },
+  {
+    "name": "RISE AND FALL GURU",
+    "file": "RISE AND FALL GURU.xml",
+    "description": "Advanced trading strategy: RISE AND FALL GURU. Optimized for consistent returns and automated execution.",
+    "difficulty": "Intermediate",
+    "strategy": "Rise & Fall"
+  },
+  {
+    "name": "WIZARD AI BOT",
+    "file": "WIZARD AI BOT.xml",
+    "description": "Advanced trading strategy: WIZARD AI BOT. Optimized for consistent returns and automated execution.",
+    "difficulty": "Advanced",
+    "strategy": "AI Grid"
+  }
+]

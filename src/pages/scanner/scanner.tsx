@@ -8,6 +8,7 @@ import { useStore } from '@/hooks/useStore';
 import { getLastDigitFromQuote } from '@/utils/market-data';
 import { buyContractForUi, streamContractUntilSettled } from '@/utils/trade-purchase';
 import { safeSubscribe } from '@/utils/websocket-handler';
+import { formatLoginDisplay, isLoggedIn } from '@/utils/token-bridge';
 import './scanner.scss';
 
 type TTickPoint = {
@@ -265,6 +266,21 @@ const Scanner = observer(() => {
     const currency = client.currency || 'USD';
     const showScanner = active_tab === DBOT_TABS.SCANNER;
     const isCoveredByMobileRunPanel = !isDesktop && run_panel.is_drawer_open;
+
+    // Connected account info from login session
+    const [connectedAccount, setConnectedAccount] = useState<string>('');
+    const [sessionConnected, setSessionConnected] = useState(false);
+
+    useEffect(() => {
+        const check = () => {
+            const connected = isLoggedIn();
+            setSessionConnected(connected);
+            if (connected) setConnectedAccount(formatLoginDisplay());
+        };
+        check();
+        const iv = setInterval(check, 5000);
+        return () => clearInterval(iv);
+    }, []);
     const selectedMarket = MARKETS.find(market => market.symbol === selectedSymbol) ?? MARKETS[0];
     const latestTick = ticks[ticks.length - 1];
     const latestDigit = latestTick ? getLastDigitFromQuote(latestTick.quote, selectedSymbol) : null;
@@ -763,6 +779,16 @@ const Scanner = observer(() => {
             <div className='background'>
                 <div className='scrolling-text'>{scrollingText}</div>
             </div>
+            {/* Connected Account Banner */}
+            {sessionConnected && (
+                <div className='scanner-account-banner'>
+                    <span className='scanner-account-banner__dot' />
+                    <span className='scanner-account-banner__text'>
+                        Connected: <strong>{connectedAccount}</strong>
+                    </span>
+                    <span className='scanner-account-banner__currency'>{currency}</span>
+                </div>
+            )}
             <div className='container'>
                 <h1> Signal Analyzer</h1>
                 <label htmlFor='strategy'>Select Strategy</label>

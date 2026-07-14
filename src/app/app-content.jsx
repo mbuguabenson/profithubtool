@@ -14,12 +14,12 @@ import { useStore } from '@/hooks/useStore';
 import useThemeSwitcher from '@/hooks/useThemeSwitcher';
 import { ThemeProvider } from '@deriv-com/quill-ui';
 import { setSmartChartsPublicPath } from '@deriv-com/smartcharts-champion';
-import { localize } from '@deriv-com/translations';
 import Audio from '../components/audio';
 import BlocklyLoading from '../components/blockly-loading';
 import BotStopped from '../components/bot-stopped';
 import BotBuilder from '../pages/bot-builder';
 import Main from '../pages/main';
+import { getBrandLabel } from '@/components/shared/utils/brand/brand';
 import './app.scss';
 import 'react-toastify/dist/ReactToastify.css';
 import '../components/bot-notification/bot-notification.scss';
@@ -31,10 +31,12 @@ const AppContent = observer(() => {
     const store = useStore();
     const { app, transactions, common, client } = store;
     const { is_dark_mode_on } = useThemeSwitcher();
+    const brandLabel = getBrandLabel();
 
     const { recovered_transactions, recoverPendingContracts } = transactions;
     const is_subscribed_to_msg_listener = React.useRef(false);
     const msg_listener = React.useRef(null);
+    const activeSymbolsPoller = React.useRef({ intervalId: undefined, timeoutId: undefined });
     const { connectionStatus } = useApiBase();
 
     // Initialize dev mode keyboard shortcuts
@@ -121,49 +123,114 @@ const AppContent = observer(() => {
         init();
 
         const retrieveActiveSymbols = () => {
-            const { active_symbols } = ApiHelpers.instance;
-
-            active_symbols.retrieveActiveSymbols(true).then(() => {
+            const active_symbols = ApiHelpers?.instance?.active_symbols;
+            if (!active_symbols || typeof active_symbols.retrieveActiveSymbols !== 'function') {
+                console.warn('Active symbol service unavailable, continuing without blocking UI.');
                 setIsLoading(false);
-            });
+                return;
+            }
+
+            const fallbackTimeout = window.setTimeout(() => {
+                console.warn('Active symbol retrieval timed out, continuing without blocking UI.');
+                setIsLoading(false);
+            }, 12000);
+
+            try {
+                active_symbols
+                    .retrieveActiveSymbols(true)
+                    .then(() => {
+                        setIsLoading(false);
+                    })
+                    .catch(error => {
+                        console.error('Active symbol retrieval failed:', error);
+                        setIsLoading(false);
+                    })
+                    .finally(() => clearTimeout(fallbackTimeout));
+            } catch (error) {
+                console.error('Active symbol retrieval error:', error);
+                clearTimeout(fallbackTimeout);
+                setIsLoading(false);
+            }
         };
 
         if (ApiHelpers?.instance?.active_symbols) {
             retrieveActiveSymbols();
         } else {
-            // This is a workaround to fix the issue where the active symbols are not loaded immediately
-            // when the API is initialized. Should be replaced with RxJS pubsub
-            const intervalId = setInterval(() => {
+            activeSymbolsPoller.current.intervalId = window.setInterval(() => {
                 if (ApiHelpers?.instance?.active_symbols) {
-                    clearInterval(intervalId);
+                    window.clearInterval(activeSymbolsPoller.current.intervalId);
                     retrieveActiveSymbols();
                 }
             }, 1000);
+
+            activeSymbolsPoller.current.timeoutId = window.setTimeout(() => {
+                window.clearInterval(activeSymbolsPoller.current.intervalId);
+                console.warn('Active symbol instance did not become available in time, continuing.');
+                setIsLoading(false);
+            }, 12000);
+
+            return () => {
+                if (activeSymbolsPoller.current.intervalId) {
+                    window.clearInterval(activeSymbolsPoller.current.intervalId);
+                }
+                if (activeSymbolsPoller.current.timeoutId) {
+                    window.clearTimeout(activeSymbolsPoller.current.timeoutId);
+                }
+            };
         }
     };
 
     React.useEffect(() => {
+        let cleanup;
+
         if (is_api_initialized) {
             init();
             setIsLoading(true);
             if (!client.is_logged_in) {
-                changeActiveSymbolLoadingState();
+                cleanup = changeActiveSymbolLoadingState();
             }
         }
+
+        return () => {
+            if (typeof cleanup === 'function') {
+                cleanup();
+            }
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [is_api_initialized]);
 
     React.useEffect(() => {
+        let cleanup;
+
         if (client.is_logged_in && is_api_initialized) {
-            changeActiveSymbolLoadingState();
+            cleanup = changeActiveSymbolLoadingState();
         }
+
+        return () => {
+            if (typeof cleanup === 'function') {
+                cleanup();
+            }
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [is_api_initialized, client.loginid]);
+
+    React.useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            if (is_loading) {
+                console.warn('App content loading timeout reached, rendering UI anyway.');
+                setIsLoading(false);
+            }
+        }, 20000);
+
+        return () => {
+            window.clearTimeout(timeoutId);
+        };
+    }, [is_loading]);
 
     if (common?.error) return null;
 
     return is_loading ? (
-        <ChunkLoader message={localize('Initializing Deriv Bot account...')} />
+        <ChunkLoader message={`Initializing ${brandLabel} account...`} />
     ) : (
         <AuthLoadingWrapper>
             <ThemeProvider theme={is_dark_mode_on ? 'dark' : 'light'}>
