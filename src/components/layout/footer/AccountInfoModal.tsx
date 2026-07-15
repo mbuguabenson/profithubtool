@@ -1,4 +1,3 @@
-import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { addComma, getCurrencyDisplayCode, getDecimalPlaces } from '@/components/shared';
 import { useApiBase } from '@/hooks/useApiBase';
@@ -6,7 +5,7 @@ import { useStore } from '@/hooks/useStore';
 import { isDemoAccount } from '@/utils/account-helpers';
 import { LegacyWalletIcon } from '@deriv/quill-icons/Legacy';
 import { LabelPairedUserMdRegularIcon } from '@deriv/quill-icons/LabelPaired';
-import { Localize, localize } from '@deriv-com/translations';
+import { localize } from '@deriv-com/translations';
 import './AccountInfoModal.scss';
 
 type TAccountInfoModalProps = {
