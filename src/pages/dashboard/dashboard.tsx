@@ -10,6 +10,7 @@ import Announcements from './announcements';
 import Cards from './cards';
 import InfoPanel from './info-panel';
 import RiskDisclaimer from './risk-disclaimer';
+import UltimateWelcomePage from './UltimateWelcomePage';
 
 const RISK_DISCLAIMER_ACKNOWLEDGED_KEY = 'risk_disclaimer_acknowledged';
 
@@ -34,70 +35,62 @@ const DashboardComponent = observer(({ handleTabChange }: TMobileIconGuide) => {
 
     return (
         <React.Fragment>
-            <div
-                className={classNames('tab__dashboard', {
-                    'tab__dashboard--tour-active': active_tour,
-                })}
-            >
-                <div className='tab__dashboard__content'>
-                    {client.is_logged_in && (
-                        <Announcements is_mobile={!isDesktop} is_tablet={isTablet} handleTabChange={handleTabChange} />
-                    )}
-                    <div className='quick-panel'>
-                        <div
-                            className={classNames('tab__dashboard__header', {
-                                'tab__dashboard__header--listed': isDesktop && has_dashboard_strategies,
-                            })}
-                        >
-                            <div className='welcome-section'>
+            {has_dashboard_strategies ? (
+                <div
+                    className={classNames('tab__dashboard', {
+                        'tab__dashboard--tour-active': active_tour,
+                    })}
+                >
+                    <div className='tab__dashboard__content'>
+                        {client.is_logged_in && (
+                            <Announcements is_mobile={!isDesktop} is_tablet={isTablet} handleTabChange={handleTabChange} />
+                        )}
+                        <div className='quick-panel'>
+                            <div
+                                className={classNames('tab__dashboard__header', {
+                                    'tab__dashboard__header--listed': isDesktop && has_dashboard_strategies,
+                                })}
+                            >
+                                <div className='welcome-section'>
+                                    <Text
+                                        className='welcome-title'
+                                        as='h1'
+                                        color='prominent'
+                                        size={isDesktop ? 'lg' : 'md'}
+                                        lineHeight='xxl'
+                                        weight='bold'
+                                    >
+                                        {localize('Hello Trader, Welcome to Ultimate traders site')}
+                                    </Text>
+                                    <Text
+                                        className='get-started-text'
+                                        as='p'
+                                        color='prominent'
+                                        lineHeight='m'
+                                        size={isDesktop ? 'md' : 'sm'}
+                                    >
+                                        {localize('Get started')}
+                                    </Text>
+                                </div>
                                 <Text
-                                    className='welcome-title'
-                                    as='h1'
-                                    color='prominent'
-                                    size={isDesktop ? 'lg' : 'md'}
-                                    lineHeight='xxl'
-                                    weight='bold'
-                                >
-                                    {localize('Hello Trader, Welcome to Ultimate traders site')}
-                                </Text>
-                                <Text
-                                    className='get-started-text'
                                     as='p'
                                     color='prominent'
-                                    lineHeight='m'
-                                    size={isDesktop ? 'md' : 'sm'}
+                                    lineHeight='s'
+                                    size={isDesktop ? 's' : 'xxs'}
+                                    className={classNames('subtitle', { 'subtitle__has-list': has_dashboard_strategies })}
                                 >
-                                    {localize('Get started')}
+                                    {localize(
+                                        'Import a bot from your computer or Google Drive, build it from scratch, or start with a quick strategy.'
+                                    )}
                                 </Text>
                             </div>
-                            {!has_dashboard_strategies && (
-                                <Text
-                                    className='title'
-                                    as='h2'
-                                    color='prominent'
-                                    size={isDesktop ? 'sm' : 's'}
-                                    lineHeight='xxl'
-                                    weight='bold'
-                                >
-                                    {localize('Load or build your bot')}
-                                </Text>
-                            )}
-                            <Text
-                                as='p'
-                                color='prominent'
-                                lineHeight='s'
-                                size={isDesktop ? 's' : 'xxs'}
-                                className={classNames('subtitle', { 'subtitle__has-list': has_dashboard_strategies })}
-                            >
-                                {localize(
-                                    'Import a bot from your computer or Google Drive, build it from scratch, or start with a quick strategy.'
-                                )}
-                            </Text>
+                            <Cards has_dashboard_strategies={has_dashboard_strategies} is_mobile={!isDesktop} />
                         </div>
-                        <Cards has_dashboard_strategies={has_dashboard_strategies} is_mobile={!isDesktop} />
                     </div>
                 </div>
-            </div>
+            ) : (
+                <UltimateWelcomePage handleTabChange={handleTabChange} />
+            )}
             <InfoPanel />
             {client.is_logged_in && showDisclaimer && <RiskDisclaimer is_mobile={!isDesktop} />}
             {active_tab === 0 && <OnboardTourHandler is_mobile={!isDesktop} />}
