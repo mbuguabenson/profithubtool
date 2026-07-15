@@ -7,7 +7,10 @@ import { getActiveTabUrl } from '@/utils/getActiveTabUrl';
 import { FILTERED_LANGUAGES } from '@/utils/languages';
 import { isLoggedIn } from '@/utils/token-bridge';
 import { useTranslations } from '@deriv-com/translations';
-import { DesktopLanguagesModal } from '@deriv-com/ui';
+import { DesktopLanguagesModal, useDevice, Tooltip } from '@deriv-com/ui';
+import { LabelPairedUserMdRegularIcon } from '@deriv/quill-icons/LabelPaired';
+import { useState } from 'react';
+import AccountInfoModal from './AccountInfoModal';
 import ChangeTheme from './ChangeTheme';
 import FullScreen from './FullScreen';
 import LanguageSettings from './LanguageSettings';
@@ -43,12 +46,31 @@ const Footer = () => {
     const enableLanguageSettings = brandConfig.platform.footer?.enable_language_settings ?? true;
     const enableThemeToggle = brandConfig.platform.footer?.enable_theme_toggle ?? true;
 
+    const { isDesktop } = useDevice();
+    const [isAccountInfoOpen, setIsAccountInfoOpen] = useState(false);
+
     const openLanguageSettingModal = () => showModal('DesktopLanguagesModal');
 
     return (
         <footer className='app-footer'>
             <FullScreen />
             {(isAuthorized || isLoggedIn()) && <LogoutFooter />}
+            <div className='app-footer__vertical-line' />
+
+            {/* Account Info Modal (Desktop) */}
+            {isDesktop && (isAuthorized || isLoggedIn()) && (
+                <>
+                    <Tooltip
+                        as='button'
+                        className='app-footer__icon'
+                        onClick={() => setIsAccountInfoOpen(true)}
+                        tooltipContent={localize('Account Info')}
+                    >
+                        <LabelPairedUserMdRegularIcon fill='var(--text-general)' width={16} height={16} />
+                    </Tooltip>
+                    <div className='app-footer__vertical-line' />
+                </>
+            )}
 
             {/* WhatsApp contact link (migrated from header) */}
             <>
@@ -96,6 +118,8 @@ const Footer = () => {
                     selectedLanguage={currentLang}
                 />
             )}
+            {/* Account Info Modal */}
+            <AccountInfoModal isOpen={isAccountInfoOpen} onClose={() => setIsAccountInfoOpen(false)} />
         </footer>
     );
 };

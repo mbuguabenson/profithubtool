@@ -198,13 +198,14 @@ const TradeAnimation = observer(({ className, should_show_overlay }: TTradeAnima
                 </div>
             ) : (
                 <div className='animation__run-stop-group'>
-                    {/* Pause / Resume button — visible only while the bot is actively running */}
-                    {is_stop_button_visible && !is_stop_button_disabled && (
+                    {/* Pause / Resume button — visible while running or when paused */}
+                    {(is_stop_button_visible || isPaused) && (
                         <button
                             id='db-animation__pause-button'
                             className={classNames('animation__pause-button', {
                                 'animation__pause-button--paused': isPaused,
                             })}
+                            disabled={is_stop_button_visible && is_stop_button_disabled}
                             title={isPaused ? localize('Resume bot') : localize('Pause bot after current contract')}
                             onClick={() => {
                                 if (isPaused) {

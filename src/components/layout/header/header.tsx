@@ -58,7 +58,6 @@ const CurrencyDropdown = () => {
 
     return (
         <div className='currency-dropdown'>
-            <span className='currency-dropdown__label'>Account</span>
             <select
                 id='currency-select'
                 className='currency-dropdown__select'
@@ -77,9 +76,9 @@ const CurrencyDropdown = () => {
 // Speed Selector  (Normal / Fast / Turbo)
 // ─────────────────────────────────────────────────────────────────────────────
 const SPEED_OPTIONS = [
-    { value: '1', label: '1× Normal' },
-    { value: '2', label: '2× Fast' },
-    { value: '3', label: '3× Turbo' },
+    { value: '1', label: '1x' },
+    { value: '2', label: '2x' },
+    { value: '3', label: '3x' },
 ] as const;
 
 export const SpeedSelector = () => {
@@ -252,13 +251,15 @@ const AppHeader = observer(() => {
                                     <AccountSwitcher activeAccount={activeAccount} />
                                 </div>
                             )}
-                            <Button
-                                primary
-                                disabled={client?.is_logging_out || !authData?.currency}
-                                onClick={handleTransfer}
-                            >
-                                <Localize i18n_default_text='Transfer' />
-                            </Button>
+                            {isDesktop && (
+                                <Button
+                                    primary
+                                    disabled={client?.is_logging_out || !authData?.currency}
+                                    onClick={handleTransfer}
+                                >
+                                    <Localize i18n_default_text='Transfer' />
+                                </Button>
+                            )}
                         </div>
                     );
                 }

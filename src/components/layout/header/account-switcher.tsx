@@ -157,12 +157,7 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
                             )}
                         </div>
                         {(typeof balance !== 'undefined' || !currency) && (
-                            <div
-                                className='acc-info__balance-section'
-                                onClick={toggleDisplayCurrency}
-                                style={{ cursor: 'pointer' }}
-                                title='Click to toggle display currency'
-                            >
+                            <div className='acc-info__balance-section'>
                                 <p
                                     data-testid='dt_balance'
                                     className={classNames('acc-info__balance', {
