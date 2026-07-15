@@ -9,6 +9,8 @@ import './app-logo.scss';
 export const AppLogo = () => {
     const { isDesktop } = useDevice();
 
+    if (!isDesktop) return null;
+
     // Get logo configuration from brand.config.json
     const logoConfig = brandConfig.platform.logo;
     const logoUrl = logoConfig.link_url || '/';
