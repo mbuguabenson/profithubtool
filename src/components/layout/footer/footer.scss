@@ -78,6 +78,27 @@
     }
 }
 
+// ─── WhatsApp footer link ────────────────────────────────────────────────────
+.app-footer__whatsapp {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem;
+    border-radius: 6px;
+    color: var(--text-prominent);
+    text-decoration: none;
+    transition: color 0.18s, background-color 0.18s;
+
+    &:hover {
+        color: #25d366;
+        background-color: rgba(37, 211, 102, 0.1);
+    }
+
+    svg > path {
+        fill: currentColor;
+    }
+}
+
 .languages-modal__body {
     padding-inline: 1.6rem;
 

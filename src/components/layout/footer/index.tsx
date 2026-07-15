@@ -1,10 +1,11 @@
-// Updated to use brand configuration for footer elements visibility
+// Updated to include WhatsApp contact link and ensure theme toggle is always present
 // Controls language settings and theme toggle via brand.config.json
 import brandConfig from '@/../brand.config.json';
 import { useApiBase } from '@/hooks/useApiBase';
 import useModalManager from '@/hooks/useModalManager';
 import { getActiveTabUrl } from '@/utils/getActiveTabUrl';
 import { FILTERED_LANGUAGES } from '@/utils/languages';
+import { isLoggedIn } from '@/utils/token-bridge';
 import { useTranslations } from '@deriv-com/translations';
 import { DesktopLanguagesModal } from '@deriv-com/ui';
 import ChangeTheme from './ChangeTheme';
@@ -14,6 +15,24 @@ import LogoutFooter from './LogoutFooter';
 import NetworkStatus from './NetworkStatus';
 import ServerTime from './ServerTime';
 import './footer.scss';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WhatsApp icon button (moved from header)
+// ─────────────────────────────────────────────────────────────────────────────
+const WhatsAppFooterLink = () => (
+    <a
+        href='https://wa.me/254757722344'
+        target='_blank'
+        rel='noopener noreferrer'
+        className='app-footer__whatsapp'
+        title='Contact us on WhatsApp'
+        aria-label='Contact on WhatsApp'
+    >
+        <svg viewBox='0 0 24 24' width='16' height='16' fill='currentColor'>
+            <path d='M6.62 10.79a15.15 15.15 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.27 11.4 11.4 0 0 0 3.58.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .57 3.58 1 1 0 0 1-.27 1.02z' />
+        </svg>
+    </a>
+);
 
 const Footer = () => {
     const { currentLang = 'EN', localize, switchLanguage } = useTranslations();
@@ -25,44 +44,49 @@ const Footer = () => {
     const enableThemeToggle = brandConfig.platform.footer?.enable_theme_toggle ?? true;
 
     const openLanguageSettingModal = () => showModal('DesktopLanguagesModal');
+
     return (
         <footer className='app-footer'>
             <FullScreen />
-            {isAuthorized && <LogoutFooter />}
-            {/* [AI] Conditionally render language settings based on brand config */}
+            {(isAuthorized || isLoggedIn()) && <LogoutFooter />}
+
+            {/* WhatsApp contact link (migrated from header) */}
+            <>
+                <WhatsAppFooterLink />
+                <div className='app-footer__vertical-line' />
+            </>
+
+            {/* Language settings */}
             {enableLanguageSettings && (
                 <>
                     <LanguageSettings openLanguageSettingModal={openLanguageSettingModal} />
                     <div className='app-footer__vertical-line' />
                 </>
             )}
-            {/* [/AI] */}
-            {/* [AI] Conditionally render theme toggle based on brand config */}
+
+            {/* Theme toggle */}
             {enableThemeToggle && (
                 <>
                     <ChangeTheme />
                     <div className='app-footer__vertical-line' />
                 </>
             )}
-            {/* [/AI] */}
+
             <ServerTime />
             <div className='app-footer__vertical-line' />
             <NetworkStatus />
 
-            {/* [AI] Only show language modal if language settings are enabled */}
+            {/* Language modal */}
             {enableLanguageSettings && isModalOpenFor('DesktopLanguagesModal') && (
                 <DesktopLanguagesModal
                     headerTitle={localize('Select Language')}
                     isModalOpen
-                    languages={FILTERED_LANGUAGES}
+                    languages={FILTERED_LANGUAGES as any}
                     onClose={hideModal}
                     onLanguageSwitch={code => {
                         try {
                             switchLanguage(code);
                             hideModal();
-                            // Page reload is necessary because Blockly is outside React lifecycle
-                            // and won't re-render with new language without full page refresh
-                            // Use replace() to navigate to the active tab URL which will reload the page
                             window.location.replace(getActiveTabUrl());
                         } catch (error) {
                             console.error('Failed to switch language:', error);
@@ -72,7 +96,6 @@ const Footer = () => {
                     selectedLanguage={currentLang}
                 />
             )}
-            {/* [/AI] */}
         </footer>
     );
 };

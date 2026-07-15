@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { observer } from 'mobx-react-lite';
 import { generateOAuthURL } from '@/components/shared';
@@ -14,22 +14,24 @@ import { AppLogo } from '../app-logo';
 import AccountSwitcher from './account-switcher';
 import MenuItems from './menu-items';
 import MobileMenu from './mobile-menu';
-import useThemeSwitcher from '@/hooks/useThemeSwitcher';
-import { LegacyThemeDarkIcon, LegacyThemeLightIcon } from '@deriv/quill-icons/Legacy';
 import './header.scss';
 
-const CurrencyToggle = () => {
+// ─────────────────────────────────────────────────────────────────────────────
+// Currency Dropdown  (USD / KES)
+// ─────────────────────────────────────────────────────────────────────────────
+const CurrencyDropdown = () => {
     const [currency, setCurrency] = useState<'USD' | 'KES'>(() => {
         return (localStorage.getItem('converter_display_currency') as 'USD' | 'KES') || 'USD';
     });
 
-    const toggleCurrency = () => {
-        const next = currency === 'USD' ? 'KES' : 'USD';
+    const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const next = e.target.value as 'USD' | 'KES';
         localStorage.setItem('converter_display_currency', next);
         setCurrency(next);
         window.dispatchEvent(new Event('currency_changed'));
     };
 
+    // Sync across tabs / other components
     useEffect(() => {
         const handleSync = () => {
             setCurrency((localStorage.getItem('converter_display_currency') as 'USD' | 'KES') || 'USD');
@@ -38,6 +40,7 @@ const CurrencyToggle = () => {
         return () => window.removeEventListener('currency_changed', handleSync);
     }, []);
 
+    // Fetch live KES rate once on mount
     useEffect(() => {
         const fetchRate = () => {
             fetch('https://open.er-api.com/v6/latest/USD')
@@ -48,148 +51,87 @@ const CurrencyToggle = () => {
                         window.dispatchEvent(new Event('currency_changed'));
                     }
                 })
-                .catch(err => console.warn('Failed to fetch real-time KES exchange rate:', err));
+                .catch(err => console.warn('Failed to fetch KES rate:', err));
         };
-        const cachedRate = localStorage.getItem('converter_kes_rate');
-        if (!cachedRate) {
-            fetchRate();
-        } else {
-            fetchRate();
-        }
+        fetchRate();
     }, []);
 
     return (
-        <button
-            onClick={toggleCurrency}
-            style={{
-                background: 'var(--general-section-1)',
-                border: '1px solid var(--border-normal)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                padding: '2px',
-                borderRadius: '20px',
-                color: 'var(--text-general)',
-                fontSize: '11px',
-                fontWeight: 'bold',
-                transition: 'all 0.2s',
-                height: '32px',
-                width: '80px',
-                position: 'relative',
-                overflow: 'hidden',
-            }}
-            type='button'
-            title='Toggle display currency (USD / KES)'
-        >
-            <div
-                style={{
-                    position: 'absolute',
-                    top: '2px',
-                    bottom: '2px',
-                    left: currency === 'USD' ? '2px' : '40px',
-                    width: '36px',
-                    background: '#f5c542',
-                    borderRadius: '16px',
-                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                    zIndex: 1,
-                }}
-            />
-            <span
-                style={{
-                    flex: 1,
-                    textAlign: 'center',
-                    zIndex: 2,
-                    color: currency === 'USD' ? '#000000' : 'var(--text-general)',
-                    transition: 'color 0.2s',
-                }}
+        <div className='currency-dropdown'>
+            <span className='currency-dropdown__label'>Account</span>
+            <select
+                id='currency-select'
+                className='currency-dropdown__select'
+                value={currency}
+                onChange={handleChange}
+                title='Select display currency (USD / KES)'
             >
-                USD
-            </span>
-            <span
-                style={{
-                    flex: 1,
-                    textAlign: 'center',
-                    zIndex: 2,
-                    color: currency === 'KES' ? '#000000' : 'var(--text-general)',
-                    transition: 'color 0.2s',
-                }}
-            >
-                KES
-            </span>
-        </button>
+                <option value='USD'>USD</option>
+                <option value='KES'>KES</option>
+            </select>
+        </div>
     );
 };
 
-const WhatsAppLink = () => {
+// ─────────────────────────────────────────────────────────────────────────────
+// Speed Selector  (Normal / Fast / Turbo)
+// ─────────────────────────────────────────────────────────────────────────────
+const SPEED_OPTIONS = [
+    { value: '1', label: '1× Normal' },
+    { value: '2', label: '2× Fast' },
+    { value: '3', label: '3× Turbo' },
+] as const;
+
+export const SpeedSelector = () => {
+    const [speed, setSpeed] = useState<string>(() => {
+        return localStorage.getItem('bot_execution_speed') || '1';
+    });
+
+    const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const next = e.target.value;
+        localStorage.setItem('bot_execution_speed', next);
+        setSpeed(next);
+        window.dispatchEvent(new CustomEvent('bot_speed_changed', { detail: { speed: next } }));
+    };
+
+    // Sync when speed changes from elsewhere
+    useEffect(() => {
+        const handleSync = () => {
+            setSpeed(localStorage.getItem('bot_execution_speed') || '1');
+        };
+        window.addEventListener('bot_speed_changed', handleSync);
+        return () => window.removeEventListener('bot_speed_changed', handleSync);
+    }, []);
+
+    const isActive = speed !== '1';
+
     return (
-        <a
-            href='https://wa.me/254757722344'
-            target='_blank'
-            rel='noopener noreferrer'
-            style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '8px',
-                borderRadius: '8px',
-                color: 'var(--text-general)',
-                transition: 'background-color 0.2s',
-                textDecoration: 'none',
-                cursor: 'pointer',
-                height: '32px',
-                width: '32px',
-            }}
-            onMouseEnter={e => {
-                e.currentTarget.style.backgroundColor = 'var(--general-hover)';
-            }}
-            onMouseLeave={e => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-            title='Contact on WhatsApp'
-        >
-            <svg viewBox='0 0 24 24' width='20' height='20' fill='currentColor'>
-                <path d='M6.62 10.79a15.15 15.15 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.27 11.4 11.4 0 0 0 3.58.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .57 3.58 1 1 0 0 1-.27 1.02z' />
-            </svg>
-        </a>
+        <div className={clsx('speed-selector', { 'speed-selector--active': isActive })} title='Bot execution speed'>
+            <span className='speed-selector__icon'>
+                {/* Lightning bolt SVG */}
+                <svg viewBox='0 0 24 24' width='14' height='14' fill='currentColor'>
+                    <path d='M13 2L3 14h9l-1 8 10-12h-9l1-8z' />
+                </svg>
+            </span>
+            <select
+                id='speed-select'
+                className='speed-selector__select'
+                value={speed}
+                onChange={handleChange}
+            >
+                {SPEED_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                    </option>
+                ))}
+            </select>
+        </div>
     );
 };
 
-const ChangeThemeHeader = observer(() => {
-    const { is_dark_mode_on, toggleTheme } = useThemeSwitcher();
-
-    return (
-        <button
-            className='header-theme-toggle'
-            onClick={toggleTheme}
-            style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '8px',
-                borderRadius: '8px',
-                color: 'var(--text-general)',
-                transition: 'background-color 0.2s',
-            }}
-            onMouseEnter={e => {
-                e.currentTarget.style.backgroundColor = 'var(--general-hover)';
-            }}
-            onMouseLeave={e => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-            aria-label='Toggle theme'
-        >
-            {!is_dark_mode_on ? (
-                <LegacyThemeLightIcon iconSize='xs' fill='var(--text-general)' />
-            ) : (
-                <LegacyThemeDarkIcon iconSize='xs' fill='var(--text-general)' />
-            )}
-        </button>
-    );
-});
-
+// ─────────────────────────────────────────────────────────────────────────────
+// Main AppHeader
+// ─────────────────────────────────────────────────────────────────────────────
 const AppHeader = observer(() => {
     const { isDesktop } = useDevice();
     const { isAuthorizing, activeLoginid, setIsAuthorizing, authData } = useApiBase();
@@ -198,9 +140,6 @@ const AppHeader = observer(() => {
     const is_account_regenerating = client?.is_account_regenerating || false;
 
     // Detect OAuth callback on mount (before App.tsx cleans up the URL).
-    // When ?code=...&state=... is present the full auth flow can take 7-15 s
-    // (token exchange → accounts fetch → OTP → WebSocket auth), so we must
-    // suppress the short fallback timeout and keep the spinner throughout.
     const [isOAuthPending, setIsOAuthPending] = useState(() => {
         const params = new URLSearchParams(window.location.search);
         return Boolean(params.get('code') && params.get('state'));
@@ -214,16 +153,12 @@ const AppHeader = observer(() => {
     const handleLogout = useLogout();
 
     // Clear OAuth-pending flag once the account is set (auth succeeded)
-    // or after a generous timeout in case something goes wrong.
     useEffect(() => {
         if (!isOAuthPending) return;
-
         if (activeLoginid) {
             setIsOAuthPending(false);
             return;
         }
-
-        // Safety net: give up after 30 s and let the normal flow decide
         const timer = setTimeout(() => setIsOAuthPending(false), 30_000);
         return () => clearTimeout(timer);
     }, [isOAuthPending, activeLoginid]);
@@ -237,8 +172,7 @@ const AppHeader = observer(() => {
         }
     }, [setIsAuthorizing]);
 
-    // Fallback timeout: show login button if auth never resolves.
-    // Suppressed during the OAuth callback flow (isOAuthPending = true).
+    // Fallback timeout
     useEffect(() => {
         if (isOAuthPending) return;
 
@@ -275,14 +209,9 @@ const AppHeader = observer(() => {
 
     const handleLogin = useCallback(async () => {
         try {
-            // Set authorizing state immediately when login is clicked
             setIsAuthorizing(true);
-
-            // Generate OAuth URL with CSRF token and PKCE parameters
             const oauthUrl = await generateOAuthURL();
-
             if (oauthUrl) {
-                // Redirect to OAuth URL
                 window.location.replace(oauthUrl);
             } else {
                 console.error('Failed to generate OAuth URL');
@@ -290,7 +219,6 @@ const AppHeader = observer(() => {
             }
         } catch (error) {
             console.error('Login redirection failed:', error);
-            // Reset authorizing state if redirection fails
             setIsAuthorizing(false);
         }
     }, [setIsAuthorizing]);
@@ -309,7 +237,6 @@ const AppHeader = observer(() => {
             // Show account switcher and logout when user is fully authenticated
             if (activeLoginid && !is_account_regenerating) {
                 if (position === 'left' && !isDesktop) {
-                    // For mobile left section - only account switcher
                     return (
                         <div className='auth-actions'>
                             <div className='account-info'>
@@ -318,7 +245,6 @@ const AppHeader = observer(() => {
                         </div>
                     );
                 } else if (position === 'right') {
-                    // For right section - transfer button (and account switcher on desktop)
                     return (
                         <div className='auth-actions'>
                             {isDesktop && (
@@ -354,7 +280,7 @@ const AppHeader = observer(() => {
                     </div>
                 );
             }
-            // Default: Show spinner during loading states or when authorizing
+            // Default: spinner during loading
             else if (position === 'right') {
                 return (
                     <div className='auth-actions auth-actions--loading'>
@@ -414,9 +340,10 @@ const AppHeader = observer(() => {
                 </Wrapper>
                 <Wrapper variant='right'>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {activeLoginid && <CurrencyToggle />}
-                        <WhatsAppLink />
-                        <ChangeThemeHeader />
+                        {/* Currency dropdown (replaces toggle) — only when logged in */}
+                        {activeLoginid && <CurrencyDropdown />}
+                        {/* Speed selector — always visible */}
+                        <SpeedSelector />
                         {renderAccountSection('right')}
                     </div>
                 </Wrapper>

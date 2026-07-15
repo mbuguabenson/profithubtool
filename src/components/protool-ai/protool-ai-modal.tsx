@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Component, type ReactNode } from 'react';
 import { observer } from 'mobx-react-lite';
 import DraggableResizeWrapper from '@/components/draggable/draggable-resize-wrapper';
 import { useStore } from '@/hooks/useStore';
@@ -6,6 +6,48 @@ import { localize } from '@deriv-com/translations';
 import AutoTrades from '@/pages/auto-trades/auto-trades';
 import './protool-ai-modal.scss';
 
+// ── Error boundary ──────────────────────────────────────────────────────────
+type EBState = { hasError: boolean; message: string };
+
+class ProToolErrorBoundary extends Component<{ children: ReactNode }, EBState> {
+    state: EBState = { hasError: false, message: '' };
+
+    static getDerivedStateFromError(error: Error): EBState {
+        return { hasError: true, message: error?.message ?? 'Unknown error' };
+    }
+
+    componentDidCatch(error: Error, info: React.ErrorInfo) {
+        // Log for diagnostics without surfacing the generic "Sorry" modal
+        console.error('[ProTool AI] Render error:', error, info.componentStack);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className='protool-ai-modal-error'>
+                    <span className='protool-ai-modal-error__icon'>⚠️</span>
+                    <p className='protool-ai-modal-error__title'>
+                        {localize('ProTool AI failed to load')}
+                    </p>
+                    <p className='protool-ai-modal-error__desc'>
+                        {this.state.message
+                            ? this.state.message
+                            : localize('Please close and reopen the panel, or refresh the page.')}
+                    </p>
+                    <button
+                        className='protool-ai-modal-error__retry'
+                        onClick={() => this.setState({ hasError: false, message: '' })}
+                    >
+                        {localize('Retry')}
+                    </button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
+// ── Modal component ─────────────────────────────────────────────────────────
 const ProToolAiModal = observer(() => {
     const { dashboard } = useStore();
     const { is_protool_ai_modal_visible, setProToolAiModalVisibility } = dashboard;
@@ -14,27 +56,33 @@ const ProToolAiModal = observer(() => {
         setProToolAiModalVisibility(false);
     };
 
+    if (!is_protool_ai_modal_visible) return null;
+
     return (
-        <>
-            {is_protool_ai_modal_visible && (
-                <DraggableResizeWrapper
-                    boundary='.main'
-                    header={localize('ProTool AI - Automation & Analytics')}
-                    onClose={handleClose}
-                    modalWidth={900}
-                    modalHeight={650}
-                    minWidth={600}
-                    minHeight={450}
-                    enableResizing
-                >
-                    <div className='protool-ai-modal-body'>
-                        <Suspense fallback={<div className='protool-ai-modal-loading'>{localize('Loading Automation AI...')}</div>}>
-                            <AutoTrades isModal={true} />
-                        </Suspense>
-                    </div>
-                </DraggableResizeWrapper>
-            )}
-        </>
+        <DraggableResizeWrapper
+            boundary='.main'
+            header={localize('ProTool AI - Automation & Analytics')}
+            onClose={handleClose}
+            modalWidth={900}
+            modalHeight={650}
+            minWidth={600}
+            minHeight={450}
+            enableResizing
+        >
+            <div className='protool-ai-modal-body'>
+                <ProToolErrorBoundary>
+                    <React.Suspense
+                        fallback={
+                            <div className='protool-ai-modal-loading'>
+                                {localize('Loading Automation AI...')}
+                            </div>
+                        }
+                    >
+                        <AutoTrades isModal={true} />
+                    </React.Suspense>
+                </ProToolErrorBoundary>
+            </div>
+        </DraggableResizeWrapper>
     );
 });
 

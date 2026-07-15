@@ -1,5 +1,4 @@
-// Removed unused React import - React 17+ JSX transform doesn't require it
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import classnames from 'classnames';
 import DOMPurify from 'dompurify';
 import { MessageTypes } from '@/external/bot-skeleton';
@@ -98,4 +97,12 @@ const JournalItem = ({ row, measure }: TJournalItemProps) => {
     );
 };
 
-export default JournalItem;
+// Memoized to prevent cascade re-renders when sibling journal messages
+// are added. Only re-renders if this row's unique_id, message, or time changes.
+export default memo(JournalItem, (prev, next) => {
+    return (
+        prev.row.unique_id === next.row.unique_id &&
+        prev.row.message === next.row.message &&
+        prev.row.time === next.row.time
+    );
+});

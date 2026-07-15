@@ -21,6 +21,20 @@ type TMenuConfig = {
     isActive?: boolean;
 }[];
 
+// WhatsApp icon for mobile menu
+const WhatsAppIcon = ({ className, iconSize: _iconSize }: { className?: string; iconSize?: string }) => (
+    <svg
+        className={className}
+        viewBox='0 0 24 24'
+        width='16'
+        height='16'
+        fill='currentColor'
+        style={{ color: 'var(--text-general)' }}
+    >
+        <path d='M6.62 10.79a15.15 15.15 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.27 11.4 11.4 0 0 0 3.58.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .57 3.58 1 1 0 0 1-.27 1.02z' />
+    </svg>
+);
+
 const useMobileMenuConfig = (
     client?: RootStore['client'],
     onLogout?: () => void,
@@ -32,24 +46,15 @@ const useMobileMenuConfig = (
     const menuConfig = useMemo((): TMenuConfig[] => {
         return [
             [
-                // ========================================
-                // CUSTOM MENU ITEMS PLACEHOLDER
-                // ========================================
-                //
-                // Add your custom menu items here.
-                //
-                // EXAMPLE:
-                // {
-                //     as: 'a',
-                //     label: localize('Your Page'),
-                //     LeftComponent: YourIcon,
-                //     href: '/your-page',
-                // },
-                //
-                // For desktop menu items, see:
-                // src/components/layout/header/header-config.tsx
-
-                // Conditionally include theme toggle based on brand config
+                // WhatsApp contact link (migrated from header)
+                {
+                    as: 'a',
+                    label: localize('WhatsApp Support'),
+                    LeftComponent: WhatsAppIcon,
+                    href: 'https://wa.me/254757722344',
+                    target: '_blank',
+                },
+                // Theme toggle (conditionally shown based on brand config)
                 enableThemeToggle && {
                     as: 'button',
                     label: localize('Dark theme'),
@@ -74,18 +79,15 @@ const useMobileMenuConfig = (
         is_dark_mode_on,
         toggleTheme,
         localize,
-        enableThemeToggle, // [AI] Added to recalculate menu when theme toggle config changes
+        enableThemeToggle,
     ]);
 
-    // [AI] Check if menu has any items to determine if mobile menu should be shown
+    // Check if menu has any items to determine if mobile menu should be shown
     const hasMenuItems = menuConfig.some(section => section.length > 0);
-    // [/AI]
 
     return {
         config: menuConfig,
-        // [AI] Return flag indicating if menu has any items
         hasMenuItems,
-        // [/AI]
     };
 };
 

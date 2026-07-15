@@ -1124,6 +1124,7 @@ const AutoTrades = observer(({ isModal = false }: TAutoTradesProps) => {
     const [totalTrades, setTotalTrades] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [isConnected, setIsConnected] = useState(false);
+    const [isRunning, setIsRunning] = useState(false);
     const [connectedAccount, setConnectedAccount] = useState<string>('');
     const [sessionConnected, setSessionConnected] = useState(false);
     const [inverseMode, setInverseMode] = useState(() => {
@@ -1196,29 +1197,7 @@ const AutoTrades = observer(({ isModal = false }: TAutoTradesProps) => {
     const [marketDisplays, setMarketDisplays] = useState<MarketDisplay[]>(
         selectedMarkets.map(m => ({
             ...m,
-            consecutive: 0,
-            lastDigits: [],
-            directionHistory: [],
-            isRecovering: false,
-            prevQuote: null,
-            candleDirection: 0,
-            candleOpen: null,
-            candleClose: null,
-            directionSampleHistory: [],
-            trading: false,
-            lastResult: null,
-            tradeCount: 0,
-            lastQuote: null,
-            tradeStartTime: null,
-            verificationId: null,
-            digitHistory: [],
-            digitPercentages: {},
-            confidenceScore: 0,
-            momentumCount: 0,
-            percentageQuoteHistory: [],
-            percentageEpochHistory: [],
-            percentageBackfilled: false,
-            percentageBackfillInFlight: false,
+            ...createMarketState(),
             currentStake: 1,
             cooldownLeft: 0,
         }))
@@ -2172,7 +2151,7 @@ const AutoTrades = observer(({ isModal = false }: TAutoTradesProps) => {
                     setFloatingStrategyAlert({
                         marketLabel,
                         message: state.alertMessage,
-                        strategyId: activeStrategyTemplate,
+                        strategyId: activeStrategyTemplate as DigitStrategyId,
                         symbol,
                     });
                 } else if (

@@ -5,7 +5,11 @@ import ContractResultOverlay from '@/components/contract-result-overlay';
 import { DBOT_TABS } from '@/constants/bot-contents';
 import { contract_stages } from '@/constants/contract-stage';
 import { useStore } from '@/hooks/useStore';
-import { LabelPairedPlayLgFillIcon, LabelPairedSquareLgFillIcon } from '@deriv/quill-icons/LabelPaired';
+import {
+    LabelPairedPauseLgFillIcon,
+    LabelPairedPlayLgFillIcon,
+    LabelPairedSquareLgFillIcon,
+} from '@deriv/quill-icons/LabelPaired';
 import { Localize, localize } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 /* [AI] - Analytics event tracking removed - see migrate-docs/MONITORING_PACKAGES.md for re-implementation guide */
@@ -32,13 +36,7 @@ const TradeAnimation = observer(({ className, should_show_overlay }: TTradeAnima
         run_panel;
     const [shouldDisable, setShouldDisable] = React.useState(false);
     const is_unavailable_for_payment_agent = false;
-    const [isSpeedMode, setIsSpeedMode] = React.useState(() => localStorage.getItem('is_speed_mode_on') === 'true');
-
-    const toggleSpeedMode = () => {
-        const newVal = !isSpeedMode;
-        setIsSpeedMode(newVal);
-        localStorage.setItem('is_speed_mode_on', String(newVal));
-    };
+    const [isPaused, setIsPaused] = React.useState(false);
 
     // Get the load_modal store to monitor strategy deletions
     const { load_modal } = useStore();
@@ -172,17 +170,6 @@ const TradeAnimation = observer(({ className, should_show_overlay }: TTradeAnima
 
     return (
         <div className={classNames('animation__wrapper', className)}>
-            <div
-                className={classNames('animation__speed-toggle', {
-                    'animation__speed-toggle--active': isSpeedMode,
-                })}
-                onClick={toggleSpeedMode}
-                title={isSpeedMode ? localize('Speed Mode: On (Executes on every tick)') : localize('Speed Mode: Off (Standard execution)')}
-            >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill={isSpeedMode ? '#f5c542' : 'none'} stroke={isSpeedMode ? 'none' : '#858999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'all 0.2s' }}>
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                </svg>
-            </div>
             {should_show_tooltip ? (
                 <div className='run__button_wrapper'>
                     <Tooltip
@@ -210,26 +197,57 @@ const TradeAnimation = observer(({ className, should_show_overlay }: TTradeAnima
                     </div>
                 </div>
             ) : (
-                <Button
-                    is_disabled={(is_disabled && !is_unavailable_for_payment_agent) || contract_stage === 3}
-                    className={button_props.class}
-                    id={button_props.id}
-                    icon={button_props.icon}
-                    onClick={() => {
-                        setShouldDisable(true);
-                        if (is_stop_button_visible) {
-                            onStopBotClick();
-                            return;
-                        }
-                        onRunButtonClick();
-                    }}
-                    has_effect
-                    {...(is_stop_button_visible || !is_unavailable_for_payment_agent
-                        ? { primary: true }
-                        : { green: true })}
-                >
-                    {button_props.text}
-                </Button>
+                <div className='animation__run-stop-group'>
+                    {/* Pause / Resume button — visible only while the bot is actively running */}
+                    {is_stop_button_visible && !is_stop_button_disabled && (
+                        <button
+                            id='db-animation__pause-button'
+                            className={classNames('animation__pause-button', {
+                                'animation__pause-button--paused': isPaused,
+                            })}
+                            title={isPaused ? localize('Resume bot') : localize('Pause bot after current contract')}
+                            onClick={() => {
+                                if (isPaused) {
+                                    // Resume: restart the bot
+                                    setIsPaused(false);
+                                    onRunButtonClick();
+                                } else {
+                                    // Pause: stop gracefully (no new contracts will be opened)
+                                    setIsPaused(true);
+                                    onStopBotClick();
+                                }
+                            }}
+                        >
+                            {isPaused ? (
+                                <LabelPairedPlayLgFillIcon fill='#f5c542' width={16} height={16} />
+                            ) : (
+                                <LabelPairedPauseLgFillIcon fill='var(--text-general)' width={16} height={16} />
+                            )}
+                            <span>{isPaused ? <Localize i18n_default_text='Resume' /> : <Localize i18n_default_text='Pause' />}</span>
+                        </button>
+                    )}
+                    <Button
+                        is_disabled={(is_disabled && !is_unavailable_for_payment_agent) || contract_stage === 3}
+                        className={button_props.class}
+                        id={button_props.id}
+                        icon={button_props.icon}
+                        onClick={() => {
+                            setShouldDisable(true);
+                            setIsPaused(false); // clear paused state on manual stop
+                            if (is_stop_button_visible) {
+                                onStopBotClick();
+                                return;
+                            }
+                            onRunButtonClick();
+                        }}
+                        has_effect
+                        {...(is_stop_button_visible || !is_unavailable_for_payment_agent
+                            ? { primary: true }
+                            : { green: true })}
+                    >
+                        {button_props.text}
+                    </Button>
+                </div>
             )}
             <div
                 className={classNames('animation__container', className, {

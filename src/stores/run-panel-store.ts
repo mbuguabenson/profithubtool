@@ -12,10 +12,11 @@ import GTM from '@/utils/gtm';
 import { helpers } from '@/utils/store-helpers';
 import { generateUrlWithRedirect } from '@/utils/url-redirect-utils';
 import { Buy, ProposalOpenContract } from '@deriv/api-types';
-import { TStores } from '@deriv/stores/types';
 import { localize } from '@deriv-com/translations';
-import { TDbot } from 'Types';
 import RootStore from './root-store';
+
+type TStores = any;
+type TDbot = any;
 
 export type TContractState = {
     buy?: Buy;
@@ -53,6 +54,7 @@ export default class RunPanelStore {
             setContractStage: action,
             setHasOpenContract: action,
             setIsRunning: action,
+            setRunId: action,
             onRunButtonClick: action,
             is_contract_buying_in_progress: observable,
             SetpurchaseInProgress: action,
@@ -300,6 +302,10 @@ export default class RunPanelStore {
 
     toggleDrawer = (is_open: boolean) => {
         this.is_drawer_open = is_open;
+    };
+
+    setRunId = (run_id: string) => {
+        this.run_id = run_id;
     };
 
     setActiveTabIndex = (index: number) => {

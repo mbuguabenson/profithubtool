@@ -12,7 +12,8 @@ import { localize } from '@deriv-com/translations';
 import { isCustomJournalMessage } from '../utils/journal-notifications';
 import { getStoredItemsByKey, getStoredItemsByUser, setStoredItemsByKey } from '../utils/session-storage';
 import { getSetting, storeSetting } from '../utils/settings';
-import { TAccountList } from './client-store';
+import type ClientStore from './client-store';
+type TAccountList = ClientStore['account_list'];
 import RootStore from './root-store';
 
 type TExtra = {
@@ -70,10 +71,16 @@ export interface IJournalStore {
     restoreStoredJournals: () => void;
 }
 
+// Maximum number of journal entries kept in memory to prevent DOM freeze
+const MAX_JOURNAL_MEMORY = 1000;
+// Maximum entries persisted to sessionStorage
+const MAX_JOURNAL_STORAGE = 5000;
+
 export default class JournalStore {
     root_store: RootStore;
     core: RootStore['core'];
     disposeReactionsFn: () => void;
+    private _storageDebounceTimer: ReturnType<typeof setTimeout> | null = null;
     constructor(root_store: RootStore, core: RootStore['core']) {
         makeObservable(this, {
             is_filter_dialog_visible: observable,
@@ -121,7 +128,7 @@ export default class JournalStore {
     }
 
     getServerTime() {
-        return this.core?.common.server_time.get();
+        return (this.core?.common as any)?.server_time?.get();
     }
 
     playAudio = (sound: string) => {
@@ -231,7 +238,7 @@ export default class JournalStore {
             isCustomJournalMessage(
                 { message, block_id, variable_name },
                 run_panel.showErrorMessage,
-                () => dbot.centerAndHighlightBlock(block_id as string, true),
+                () => (dbot as any).centerAndHighlightBlock(block_id as string, true),
                 customPushMessage,
                 isStatNotification
             )
@@ -265,14 +272,20 @@ export default class JournalStore {
         const time = formatDate(this.getServerTime(), 'HH:mm:ss [GMT]');
         const unique_id = uuidv4();
 
-        this.unfiltered_messages.unshift({ date, time, message, message_type, className, unique_id, extra });
-        this.unfiltered_messages = this.unfiltered_messages.slice(); // force array update
+        // Prepend new message. observable.shallow tracks the array reference;
+        // splice(0, 0, item) mutates in-place and triggers MobX without needing
+        // an extra .slice() copy — avoiding a second re-render per message.
+        this.unfiltered_messages.splice(0, 0, { date, time, message, message_type, className, unique_id, extra });
+
+        // Cap in-memory buffer to prevent the virtualised list from rendering
+        // thousands of rows and freezing the UI.
+        if (this.unfiltered_messages.length > MAX_JOURNAL_MEMORY) {
+            this.unfiltered_messages.splice(MAX_JOURNAL_MEMORY);
+        }
     }
 
     // Method to update the existing stat message instead of creating a new one
     updateStatMessage(message: string, setContractBuyInprogress: () => void, isContractBuyInprogress: boolean) {
-        // First check if the first message in the array is already a stat message
-
         if (isContractBuyInprogress) {
             const firstMessage = this.unfiltered_messages[0];
 
@@ -281,15 +294,14 @@ export default class JournalStore {
                 typeof firstMessage.message === 'string' &&
                 firstMessage.message.includes('stat-count')
             ) {
-                // Update the existing first message with the new stat value using immutable pattern
-                // to properly update MobX observable (avoid direct mutations)
+                // Mutate the first element in-place — MobX observable.shallow
+                // tracks array item references; assigning a new object at index 0
+                // is the lightest update that still triggers observers.
                 this.unfiltered_messages[0] = {
                     ...firstMessage,
                     message,
                     time: formatDate(this.getServerTime(), 'HH:mm:ss [GMT]'),
                 };
-                // Force array update
-                this.unfiltered_messages = this.unfiltered_messages.slice();
                 return;
             }
         }
@@ -334,12 +346,18 @@ export default class JournalStore {
         const client = this.core.client as RootStore['client'];
 
         // Write journal messages to session storage on each change in unfiltered messages.
+        // Debounced to 300 ms so rapid bursts of messages (e.g. high-frequency bot trades)
+        // don't serialise the entire array to storage on every single tick.
         const disposeWriteJournalMessageListener = reaction(
-            () => this.unfiltered_messages,
-            unfiltered_messages => {
-                const stored_journals = getStoredItemsByKey(this.JOURNAL_CACHE, {});
-                stored_journals[client.loginid as string] = unfiltered_messages?.slice(0, 5000);
-                setStoredItemsByKey(this.JOURNAL_CACHE, stored_journals);
+            () => this.unfiltered_messages.length,
+            () => {
+                if (this._storageDebounceTimer) clearTimeout(this._storageDebounceTimer);
+                this._storageDebounceTimer = setTimeout(() => {
+                    const stored_journals = getStoredItemsByKey(this.JOURNAL_CACHE, {});
+                    stored_journals[client.loginid as string] = this.unfiltered_messages?.slice(0, MAX_JOURNAL_STORAGE);
+                    setStoredItemsByKey(this.JOURNAL_CACHE, stored_journals);
+                    this._storageDebounceTimer = null;
+                }, 300);
             }
         );
 

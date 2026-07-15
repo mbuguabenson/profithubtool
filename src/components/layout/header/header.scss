@@ -289,3 +289,118 @@
         transform: rotate(360deg);
     }
 }
+
+// ─── Currency Dropdown ───────────────────────────────────────────────────────
+.currency-dropdown {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--general-section-1);
+    border: 1px solid var(--border-normal);
+    border-radius: 20px;
+    padding: 0 10px 0 12px;
+    height: 32px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:hover,
+    &:focus-within {
+        border-color: #f5c542;
+        box-shadow: 0 0 0 2px rgba(245, 197, 66, 0.18);
+    }
+
+    &__label {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--text-less-prominent);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+        pointer-events: none;
+    }
+
+    &__select {
+        appearance: none;
+        -webkit-appearance: none;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--text-general);
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        padding-right: 14px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23f5c542' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0 center;
+
+        option {
+            background: var(--general-main-1);
+            color: var(--text-general);
+        }
+    }
+}
+
+// ─── Speed Selector ──────────────────────────────────────────────────────────
+.speed-selector {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--general-section-1);
+    border: 1px solid var(--border-normal);
+    border-radius: 20px;
+    padding: 0 10px 0 10px;
+    height: 32px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:hover,
+    &:focus-within {
+        border-color: var(--brand-blue, #4c82f7);
+        box-shadow: 0 0 0 2px rgba(76, 130, 247, 0.18);
+    }
+
+    &--active {
+        border-color: #22c55e;
+        background: rgba(34, 197, 94, 0.08);
+
+        .speed-selector__icon {
+            color: #22c55e;
+        }
+
+        &:hover,
+        &:focus-within {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.18);
+        }
+    }
+
+    &__icon {
+        display: flex;
+        align-items: center;
+        color: var(--text-less-prominent);
+        pointer-events: none;
+        flex-shrink: 0;
+    }
+
+    &__select {
+        appearance: none;
+        -webkit-appearance: none;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--text-general);
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+        padding-right: 14px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234c82f7' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0 center;
+
+        option {
+            background: var(--general-main-1);
+            color: var(--text-general);
+        }
+    }
+}
