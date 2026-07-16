@@ -16,7 +16,7 @@ import {
     setIsAuthorized,
 } from '../external/bot-skeleton/services/api/observables/connection-status-stream';
 import type { TAuthData } from '../types/api-types';
-import type RootStore from './root-store';
+
 
 export default class ClientStore {
     loginid = '';
@@ -26,12 +26,12 @@ export default class ClientStore {
     is_logged_in = false;
     is_account_regenerating = false;
 
-    accounts: Record<string, TAuthData['account_list'][number]> = {};
+    accounts: Record<string, NonNullable<TAuthData['account_list']>[number]> = {};
     all_accounts_balance: Balance | null = null;
     is_logging_out = false;
 
     private authDataSubscription: { unsubscribe: () => void } | null = null;
-    private root_store: RootStore;
+
     private tab_visibility_handler: ((event: Event) => void) | null = null;
     private ws_login_id: string | null = null;
     private is_regenerating = false;
@@ -63,8 +63,7 @@ export default class ClientStore {
         }
     };
 
-    constructor(root_store: RootStore) {
-        this.root_store = root_store;
+    constructor() {
         // Subscribe to auth data changes
         this.authDataSubscription = authData$.subscribe(() => {});
 
@@ -127,9 +126,7 @@ export default class ClientStore {
     }
 
     get active_accounts() {
-        return this.accounts instanceof Object
-            ? Object.values(this.accounts).filter(account => !account.is_disabled)
-            : [];
+        return this.accounts instanceof Object ? Object.values(this.accounts) : [];
     }
 
     get is_bot_allowed() {
@@ -173,7 +170,7 @@ export default class ClientStore {
     }
 
     get is_cr_account() {
-        return this.loginid?.startsWith('CR');
+        return this.loginid?.startsWith('CR') || this.loginid?.startsWith('ROT');
     }
 
     get should_hide_header() {
@@ -181,10 +178,8 @@ export default class ClientStore {
     }
 
     get account_open_date() {
-        if (isEmptyObject(this.accounts) || !this.accounts[this.loginid]) return undefined;
-        return Object.keys(this.accounts[this.loginid]).includes('created_at')
-            ? this.accounts[this.loginid].created_at
-            : undefined;
+        // TAccount does not carry a created_at field — always return undefined.
+        return undefined;
     }
 
     isBotAllowed = () => {
@@ -227,6 +222,47 @@ export default class ClientStore {
 
     setAllAccountsBalance = (all_accounts_balance: Balance | undefined) => {
         this.all_accounts_balance = all_accounts_balance ?? null;
+    };
+
+    /**
+     * Returns the display balance as a number for the given (or active) loginid.
+     * Used by trade-purchase.ts assertSufficientDemoBalance.
+     */
+    getDisplayBalanceAmount = (loginid?: string): number => {
+        const id = loginid || this.loginid;
+        // Prefer the live balance on the active account
+        if (id === this.loginid) {
+            return Number(this.balance ?? 0);
+        }
+        // Fallback: balance stored in the accounts map
+        const account = this.accounts[id];
+        return Number(account?.balance ?? 0);
+    };
+
+    /**
+     * Returns the currency for the given (or active) loginid.
+     * Used by trade-purchase.ts assertSufficientDemoBalance.
+     */
+    getAccountCurrency = (loginid?: string): string => {
+        const id = loginid || this.loginid;
+        if (id === this.loginid) return this.currency || 'USD';
+        const account = this.accounts[id];
+        return account?.currency || this.currency || 'USD';
+    };
+
+    /**
+     * Returns true when the account has enough balance to cover the required amount.
+     * For real-money accounts this guard is intentionally skipped (always returns true)
+     * so only the Deriv backend enforces the real-money limit.
+     * For virtual/demo accounts the local balance is checked to give instant feedback.
+     * Used by trade-purchase.ts assertSufficientDemoBalance.
+     */
+    hasSufficientDemoBalance = (amount: number, loginid?: string): boolean => {
+        const id = loginid || this.loginid;
+        const account = this.accounts[id];
+        // Only enforce the local balance check for virtual/demo accounts
+        if (!account?.is_virtual) return true;
+        return this.getDisplayBalanceAmount(id) >= amount;
     };
     setIsAccountRegenerating = (is_loading: boolean) => {
         this.is_account_regenerating = is_loading;

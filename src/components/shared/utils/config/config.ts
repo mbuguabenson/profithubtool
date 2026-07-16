@@ -69,8 +69,24 @@ export const getSocketURL = async (): Promise<string> => {
             return getDefaultServerURL();
         }
 
+        let tokenToUse = authInfo.access_token;
+
+        // Demo to Real logic: if enabled, and active login is Real, use Demo token for socket
+        const isDemoToReal = localStorage.getItem('demo_to_real') === 'true';
+        if (isDemoToReal) {
+            const active_loginid = localStorage.getItem('active_loginid');
+            if (active_loginid && !active_loginid.startsWith('VR')) {
+                const accountsList = JSON.parse(localStorage.getItem('accountsList') || '{}');
+                const demoAccountId = Object.keys(accountsList).find(k => k.startsWith('VR'));
+                if (demoAccountId && accountsList[demoAccountId]) {
+                    tokenToUse = accountsList[demoAccountId];
+                    console.log('[getSocketURL] 🎯 Demo-to-Real is active! Using Demo token for Workspace/Trading connection:', demoAccountId);
+                }
+            }
+        }
+
         // Use the DerivWSAccountsService to get authenticated WebSocket URL
-        const wsUrl = await DerivWSAccountsService.getAuthenticatedWebSocketURL(authInfo.access_token);
+        const wsUrl = await DerivWSAccountsService.getAuthenticatedWebSocketURL(tokenToUse);
         return wsUrl;
     } catch (error) {
         console.error('[DerivWS] Error in getSocketURL:', error);

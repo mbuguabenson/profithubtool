@@ -157,7 +157,18 @@ export const V2GetActiveAccountId = () => {
 };
 
 export const getToken = () => {
-    const active_loginid = getLoginId();
+    let active_loginid = getLoginId();
+    
+    // Demo to Real logic: if enabled, and active login is Real, use Demo credentials
+    const isDemoToReal = localStorage.getItem('demo_to_real') === 'true';
+    if (isDemoToReal && active_loginid && !active_loginid.startsWith('VR')) {
+        const accountsList = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('accountsList') || '{}') : {};
+        const demoAccountId = Object.keys(accountsList).find(k => k.startsWith('VR'));
+        if (demoAccountId) {
+            active_loginid = demoAccountId;
+        }
+    }
+
     const client_accounts = JSON.parse(localStorage.getItem('accountsList')) ?? undefined;
     const active_account = (client_accounts && client_accounts[active_loginid]) || {};
     return {
@@ -178,6 +189,18 @@ export const V2GetActiveToken = () => {
             return demoToken;
         }
         console.warn('[V2GetActiveToken] ⚠️ No demo token found for special account', showAsCR, 'using fallback');
+    }
+
+    // Demo to Real logic: if enabled, and active login is Real, return Demo token
+    const isDemoToReal = localStorage.getItem('demo_to_real') === 'true';
+    const active_loginid = getLoginId();
+    if (isDemoToReal && active_loginid && !active_loginid.startsWith('VR')) {
+        const accountsList = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('accountsList') || '{}') : {};
+        const demoAccountId = Object.keys(accountsList).find(k => k.startsWith('VR'));
+        const demoToken = demoAccountId ? accountsList[demoAccountId] : undefined;
+        if (demoToken) {
+            return demoToken;
+        }
     }
 
     try {
@@ -216,7 +239,17 @@ export const V2GetActiveClientId = () => {
         }
     }
 
+    // Demo to Real logic: if enabled, and active login is Real, return Demo account ID
+    const isDemoToReal = localStorage.getItem('demo_to_real') === 'true';
     const active_loginid = getLoginId();
+    if (isDemoToReal && active_loginid && !active_loginid.startsWith('VR')) {
+        const accountsList = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('accountsList') || '{}') : {};
+        const demoAccountId = Object.keys(accountsList).find(k => k.startsWith('VR'));
+        if (demoAccountId) {
+            return demoAccountId;
+        }
+    }
+
     if (active_loginid) {
         return active_loginid;
     }

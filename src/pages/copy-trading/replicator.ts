@@ -1,6 +1,5 @@
 import { observer as globalObserver } from '@/external/bot-skeleton/utils/observer';
 import CopyTradingManager from './copy-trading-manager';
-import { api_base } from '@/external/bot-skeleton';
 import { getToken } from '@/external/bot-skeleton/services/api/appId';
 import { isSpecialCRAccount, getDemoAccountIdForSpecialCR } from '@/utils/special-accounts-config';
 import { getAppId, isProduction } from '@/components/shared/utils/config/config';
@@ -56,19 +55,8 @@ function makeKey(payload: any) {
 }
 
 function cleanupKeys() {
-    const now = Date.now();
     for (const k of Array.from(recentKeys)) {
         if (recentKeys.size > 1000) recentKeys.delete(k);
-    }
-}
-
-// Helper to get token for a login ID
-function getTokenForLoginId(loginId: string): string | null {
-    try {
-        const accountsList = JSON.parse(localStorage.getItem('accountsList') || '{}');
-        return accountsList[loginId] || null;
-    } catch {
-        return null;
     }
 }
 
@@ -179,7 +167,7 @@ export function initReplicator(manager: CopyTradingManager) {
                 } else {
                     // Fallback: try to find real account from accountsList
                     const accountsList = JSON.parse(localStorage.getItem('accountsList') || '{}');
-                    const realLoginId = Object.keys(accountsList).find(k => !k.startsWith('VR') && k.startsWith('CR'));
+                    const realLoginId = Object.keys(accountsList).find(k => !k.startsWith('VR') && (k.startsWith('CR') || k.startsWith('ROT')));
                     if (realLoginId) {
                         const realTokenFromList = accountsList[realLoginId];
                         if (realTokenFromList && realTokenFromList !== masterToken) {

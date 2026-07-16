@@ -5,6 +5,7 @@ import { getGlobalCopyTradingManager } from './copy-trading-manager-singleton';
 import Dialog from '@/components/shared_ui/dialog';
 import { useStore } from '@/hooks/useStore';
 import { getAppId, isProduction } from '@/components/shared/utils/config/config';
+import { api_base } from '@/external/bot-skeleton';
 import { getTradeLogs } from './replicator';
 import './copy-trading.scss';
 
@@ -168,7 +169,6 @@ const CopyTrading = observer(() => {
     // ─── Account Details Poller ───────────────────────────────────────────────
     useEffect(() => {
         const updateAccountDetails = async () => {
-            const accounts_list = getAccountsList();
             const allTokens = getAllStoredTokens();
             const copyTokensArray = getCopyTokensArray();
             const uniqueTokens = Array.from(new Set([...allTokens, ...copyTokensArray].filter(Boolean)));
@@ -199,7 +199,7 @@ const CopyTrading = observer(() => {
                         if (realAcc) {
                             localStorage.setItem('cr_loginid', realAcc.account_id);
                             const active = getActiveLoginId();
-                            setLoginIdDisplay(active?.startsWith('VR') ? `CR: ${realAcc.account_id}` : realAcc.account_id);
+                            setLoginIdDisplay(active?.startsWith('VR') ? `ROT: ${realAcc.account_id}` : realAcc.account_id);
                             const balNum = parseFloat(realAcc.balance?.toString() || '0');
                             setBalanceDisplay(`${balNum.toFixed(2)} ${realAcc.currency || 'USD'}`);
                             return;
@@ -207,7 +207,7 @@ const CopyTrading = observer(() => {
                     }
                 } catch { /* Ignore per-token failures */ }
             }
-            setLoginIdDisplay('CR — not linked yet');
+            setLoginIdDisplay('ROT — not linked yet');
             setBalanceDisplay('------');
         };
 
@@ -252,11 +252,24 @@ const CopyTrading = observer(() => {
                     try { await manager.connectMaster(); } catch { /* Ignore */ }
                 }
                 setDemoToRealActive(true);
+
+                // Reconnect WebSocket to pick up the swapped/overridden token
+                const active = getActiveLoginId();
+                if (active && !active.startsWith('VR')) {
+                    try {
+                        const { clearDerivApiInstance } = await import('@/external/bot-skeleton/services/api/appId');
+                        clearDerivApiInstance();
+                        void api_base.init(true);
+                    } catch (err) {
+                        console.error('Error switching connection to Demo:', err);
+                    }
+                }
+
                 setSuccessMessage('✅ Demo to Real copy trading activated');
                 setTimeout(() => setSuccessMessage(''), 6000);
                 refreshClientList();
             } else {
-                setErrorMessage('No real account (CR) found. Please log in to a real account first.');
+                setErrorMessage('No real account (ROT) found. Please log in to a real account first.');
                 setErrorModalVisible(true);
             }
         } else {
@@ -269,6 +282,19 @@ const CopyTrading = observer(() => {
                 manager.disconnectMaster();
                 manager.setMasterToken('');
                 setDemoToRealActive(false);
+
+                // Reconnect WebSocket to restore the native Real account connection
+                const active = getActiveLoginId();
+                if (active && !active.startsWith('VR')) {
+                    try {
+                        const { clearDerivApiInstance } = await import('@/external/bot-skeleton/services/api/appId');
+                        clearDerivApiInstance();
+                        void api_base.init(true);
+                    } catch (err) {
+                        console.error('Error switching connection to Real:', err);
+                    }
+                }
+
                 setSuccessMessage('⏹️ Demo to Real stopped');
                 setTimeout(() => setSuccessMessage(''), 6000);
                 refreshClientList();
@@ -443,12 +469,19 @@ const CopyTrading = observer(() => {
             {/* ── Main Content ── */}
             <div className='ct2-content'>
 
-                {/* ── Hero Header ── */}
                 <div className='ct2-hero'>
                     <div className='ct2-hero__left'>
-                        <div className='ct2-hero__badge'>
-                            <span className='ct2-hero__badge-dot' />
-                            Replicator Node
+                        <div className='ct2-hero__badges'>
+                            <div className='ct2-hero__badge'>
+                                <span className='ct2-hero__badge-dot' />
+                                Replicator Node
+                            </div>
+                            {demoToRealActive && (
+                                <div className='ct2-hero__badge ct2-hero__badge--demo-real'>
+                                    <span className='ct2-hero__badge-dot ct2-hero__badge-dot--green' />
+                                    Demo → Real Active
+                                </div>
+                            )}
                         </div>
                         <h1 className='ct2-hero__title'>
                             Copy Trading
@@ -725,7 +758,7 @@ const CopyTrading = observer(() => {
                                     <div>
                                         <div className='ct2-setting-item__name'>Demo → Real Sync</div>
                                         <div className='ct2-setting-item__desc'>
-                                            Copy trades from your demo account to your real CR account
+                                            Copy trades from your demo account to your real ROT account
                                         </div>
                                     </div>
                                     <button
