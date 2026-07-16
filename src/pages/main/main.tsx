@@ -41,7 +41,6 @@ const ChartWrapper = lazy(() => import('../chart/chart-wrapper'));
 const TradingView = lazy(() => import('../tradingview'));
 const AnalysisTools = lazy(() => import('../analysis-tool'));
 const CopyTrading = lazy(() => import('../copy-trading'));
-const ProTool = lazy(() => import('../pro-tool'));
 const Signals = lazy(() => import('../signals'));
 const AutoTrades = lazy(() => import('../auto-trades/auto-trades'));
 const ScannerPage = lazy(() => import('../scanner/scanner'));
@@ -76,7 +75,7 @@ const AppWrapper = observer(() => {
         [key: string]: string;
     };
     const { clear } = summary_card;
-    const { DASHBOARD, BOT_BUILDER, TRADING_BOTS } = DBOT_TABS;
+    const { DASHBOARD, BOT_BUILDER } = DBOT_TABS;
     const init_render = React.useRef(true);
     const pollTimeoutId = React.useRef<ReturnType<typeof setTimeout> | null>(null);
     const hash = [
@@ -468,7 +467,7 @@ const AppWrapper = observer(() => {
                                 label={
                                     <>
                                         <LabelPairedPuzzlePieceTwoCaptionBoldIcon height='28px' width='28px' fill='#f5c542' />
-                                        <Localize i18n_default_text='Scanner' />
+                                        <Localize i18n_default_text='AI Strategy Scanner' />
                                     </>
                                 }
                                 id='id-scanner'

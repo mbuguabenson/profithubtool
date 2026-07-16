@@ -271,24 +271,19 @@ export default class RunPanelStore {
         runInAction(() => {
             this.is_paused = false;
         });
-        // The bot is still alive — we just need to let it trade again.
-        // Trigger the trade-again handler directly.
         try {
             const tradeEngine = this.dbot?.interpreter?.bot?.tradeEngine;
-            if (tradeEngine && typeof tradeEngine.isStopped === 'function') {
-                // The trade engine checks its own `isStopped` flag.
-                // We need to invoke trade again.
-                tradeEngine.trade_again = true;
-                // Re-emit the trade_again event so the interpreter picks up.
-                globalThis.Blockly?.derivWorkspace?.cached_xml_;
+            if (tradeEngine) {
+                // If trade engine is present, trigger start with saved options to resume loop
+                if (tradeEngine.tradeOptions) {
+                    tradeEngine.start(tradeEngine.tradeOptions);
+                    return;
+                }
             }
-            // Fallback: re-run the bot if the engine can't be resumed directly.
-            if (!this.has_open_contract) {
-                this.dbot.runBot();
-            }
+            // Fallback: re-run the bot if options or engine not present
+            this.dbot.runBot();
         } catch (e) {
-            // If direct resume fails, fall back to a full re-run
-            console.warn('Direct resume failed, re-running bot:', e);
+            console.warn('Direct resume failed, falling back to runBot:', e);
             this.dbot.runBot();
         }
     };

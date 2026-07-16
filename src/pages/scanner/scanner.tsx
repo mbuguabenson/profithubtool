@@ -416,7 +416,18 @@ const Scanner = observer(({ forceShow = false, isEmbed = false }: { forceShow?: 
         if (p) p.catch(() => document.addEventListener('click', () => s.play().catch(() => undefined), { once: true }));
     }, []);
 
-    // Background matrix text disabled to keep UI clean and normal
+    // ── Background matrix text ───────────────────────────────────────────────
+    useEffect(() => {
+        if (!showScanner) return undefined;
+        const update = () => {
+            let text = '';
+            for (let i = 0; i < 100; i++) text += `${generateFakeLogs()}\n`;
+            setScrollingText(text + text);
+        };
+        update();
+        const interval = setInterval(update, 200);
+        return () => clearInterval(interval);
+    }, [showScanner]);
 
     // ── Fetch 30-min candle direction ────────────────────────────────────────
     const fetchCandleDirection = useCallback(async (symbol: string) => {
@@ -1224,7 +1235,8 @@ const Scanner = observer(({ forceShow = false, isEmbed = false }: { forceShow?: 
 
     return (
         <div className={`scanner-page${isCoveredByMobileRunPanel ? ' scanner-page--run-panel-open' : ''}`}>
-            {/* Matrix background disabled */}
+            {/* Matrix background */}
+            <div className='background'><div className='scrolling-text'>{scrollingText}</div></div>
 
             {/* Account banner */}
             {sessionConnected && (

@@ -70,7 +70,7 @@ const Scanner = observer(() => {
       {is_open && (
         <DraggableResizeWrapper
           boundary=".main"
-          header={localize('Entry Scanner')}
+          header={localize('AI Market Scanner')}
           onClose={setScannerVisibility}
           modalWidth={526}
           modalHeight={595}
