@@ -11,6 +11,7 @@ import SaveModal from '../dashboard/bot-list/save-modal';
 import BotBuilderTourHandler from '../tutorials/dbot-tours/bot-builder-tour';
 import QuickStrategy1 from './quick-strategy';
 import WorkspaceWrapper from './workspace-wrapper';
+import DraggableResizeWrapper from '@/components/draggable/draggable-resize-wrapper';
 import { DBOT_TABS } from '@/constants/bot-contents';
 
 import Signals from '@/pages/signals/signals';
@@ -175,60 +176,28 @@ const BotBuilder = observer(() => {
                     style={{
                         flex: 1,
                         minWidth: 0,
-                        width: (showSidebar && isDesktop) ? 'calc(100% - 420px)' : '100%'
+                        width: '100%'
                     }}
                 >
                     <WorkspaceWrapper />
                 </div>
                 {showSidebar && isDesktop && (
-                    <div 
-                        className='protool-assistant-sidebar'
-                        style={{
-                            width: '420px',
-                            height: '100%',
-                            background: 'var(--general-main-1)',
-                            borderLeft: '1px solid var(--border-normal)',
-                            boxSizing: 'border-box',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            overflow: 'hidden',
-                            zIndex: 10
-                        }}
+                    <DraggableResizeWrapper
+                        boundary='.main'
+                        header={localize('Premium AI Signals Engine')}
+                        onClose={() => dashboard.setProToolAssistantVisibility(false)}
+                        modalWidth={530}
+                        modalHeight={660}
+                        minWidth={350}
+                        minHeight={400}
+                        enableResizing
                     >
-                        <div 
-                            className='protool-assistant-sidebar__header'
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                padding: '12px 16px',
-                                borderBottom: '1px solid var(--border-normal)',
-                                background: 'var(--general-section-1)'
-                            }}
-                        >
-                            <h3 style={{ fontSize: '1.4rem', fontWeight: 600, color: 'var(--text-prominent)', margin: 0 }}>
-                                {localize('Premium AI Signals Engine')}
-                            </h3>
-                            <button
-                                onClick={() => dashboard.setProToolAssistantVisibility(false)}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    color: 'var(--text-less-prominent)',
-                                    fontSize: '1.6rem',
-                                    padding: '4px'
-                                }}
-                            >
-                                ✕
-                            </button>
-                        </div>
-                        <div style={{ flex: 1, overflow: 'hidden' }}>
+                        <div style={{ flex: 1, height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                             <React.Suspense fallback={<div>Loading Premium Signals...</div>}>
                                 <Signals />
                             </React.Suspense>
                         </div>
-                    </div>
+                    </DraggableResizeWrapper>
                 )}
             </div>
             {active_tab === DBOT_TABS.BOT_BUILDER && <BotBuilderTourHandler is_mobile={!isDesktop} />}
