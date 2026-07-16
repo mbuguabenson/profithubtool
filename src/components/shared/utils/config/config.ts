@@ -893,7 +893,7 @@ export const getBestBotsFileUrl = (file_name: string) => buildBestBotsFileUrl(ge
 
 // WebSocket server URLs
 export const WS_SERVERS = {
-    STAGING: `${brandConfig.platform.derivws.url.staging.replace(/^http/, 'ws')}options/ws/public`,
+    STAGING: `${brandConfig.platform.derivws.url.production.replace(/^http/, 'ws')}options/ws/public`,
     PRODUCTION: `${brandConfig.platform.derivws.url.production.replace(/^http/, 'ws')}options/ws/public`,
 } as const;
 
