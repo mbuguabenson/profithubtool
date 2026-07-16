@@ -24,6 +24,7 @@ export type TAnalysisResult = {
   streaks: { digit: number; count: number }[];
   totalTicks: number;
   lastDigits: number[];
+  lastQuote: number;
 };
 
 export type TSignal = {
@@ -58,6 +59,18 @@ interface IScannerStore {
   single_market_symbol: string;
   ticks_counter: number;
   is_manual_selection: boolean;
+  
+  // Trading and automation fields
+  stake: number;
+  take_profit: number;
+  stop_loss: number;
+  martingale_multiplier: number;
+  alternate_after_losses: boolean;
+  loss_threshold: number;
+  is_auto_trading: boolean;
+  consecutive_losses: number;
+  last_trade_result: 'WIN' | 'LOSS' | null;
+
   setScannerVisibility: (is_open?: boolean) => void;
   setSelectedStrategy: (strategy: TStrategyType) => void;
   setSelectedSymbols: (symbols: string[]) => void;
@@ -82,12 +95,24 @@ export default class ScannerStore implements IScannerStore {
   current_signal: TScanSignal | null = null;
   private scanning_timeout: ReturnType<typeof setTimeout> | null = null;
 
-  // New multi-strategy and market selection options
+  // Multi-strategy and market selection options
   selected_strategies: TStrategyType[] = ['even_odd'];
   scan_market_mode: 'single' | 'multi' = 'multi';
   single_market_symbol: string = 'R_100';
   ticks_counter: number = 0;
   is_manual_selection = false;
+
+  // Automation parameters & state
+  stake = 1;
+  take_profit = 10;
+  stop_loss = 10;
+  martingale_multiplier = 2.0;
+  alternate_after_losses = false;
+  loss_threshold = 3;
+  is_auto_trading = false;
+  consecutive_losses = 0;
+  last_trade_result: 'WIN' | 'LOSS' | null = null;
+  current_strategy_index = 0;
 
   constructor(root_store: RootStore) {
     makeObservable(this, {
@@ -103,6 +128,15 @@ export default class ScannerStore implements IScannerStore {
       single_market_symbol: observable,
       ticks_counter: observable,
       is_manual_selection: observable,
+      stake: observable,
+      take_profit: observable,
+      stop_loss: observable,
+      martingale_multiplier: observable,
+      alternate_after_losses: observable,
+      loss_threshold: observable,
+      is_auto_trading: observable,
+      consecutive_losses: observable,
+      last_trade_result: observable,
       setScannerVisibility: action,
       setSelectedStrategy: action,
       setSelectedSymbols: action,
@@ -118,6 +152,7 @@ export default class ScannerStore implements IScannerStore {
     });
 
     this.root_store = root_store;
+    this.setupAutomationListeners();
   }
 
   toggleStrategy = (strategy: TStrategyType) => {
@@ -174,7 +209,12 @@ export default class ScannerStore implements IScannerStore {
       if (api_base.active_symbols) {
         const allSymbols = api_base.active_symbols
           .map((s: any) => s.symbol || s.underlying_symbol)
-          .filter(Boolean);
+          .filter((sym: string) => {
+            if (!sym) return false;
+            const s = sym.toUpperCase();
+            if (s.includes('BOOM') || s.includes('CRASH')) return false;
+            return s.includes('1HZ') || s.startsWith('R_') || s.includes('JD') || s.includes('JUMP');
+          });
         this.selected_symbols = allSymbols;
       } else {
         console.warn('[ScannerStore] No active symbols available');
@@ -268,6 +308,8 @@ export default class ScannerStore implements IScannerStore {
     const streaks = this.detectStreaks(lastDigits);
     const entropy = this.calculateEntropy(digitFrequencies);
 
+    const lastQuote = ticks[ticks.length - 1].quote;
+
     return {
       digitFrequencies,
       evenCount,
@@ -283,7 +325,8 @@ export default class ScannerStore implements IScannerStore {
       missingDigits,
       streaks,
       totalTicks,
-      lastDigits
+      lastDigits,
+      lastQuote
     };
   };
 
@@ -708,6 +751,143 @@ export default class ScannerStore implements IScannerStore {
     return activeSuperSignals.sort((a, b) => b.probability - a.probability);
   };
 
+  fetchCandleDirection = async (symbol: string): Promise<'up' | 'down' | 'neutral'> => {
+    try {
+      if (!api_base.api) return 'neutral';
+      const response = await api_base.api.send({
+        ticks_history: symbol,
+        granularity: 1800, // 30 mins
+        count: 2,
+        style: 'candles',
+      });
+      if (response && response.candles && response.candles.length > 0) {
+        const candles = response.candles;
+        const latestCandle = candles[candles.length - 1];
+        if (latestCandle.close > latestCandle.open) return 'up';
+        if (latestCandle.close < latestCandle.open) return 'down';
+      }
+      return 'neutral';
+    } catch (e) {
+      console.warn('[ScannerStore] Failed to fetch candle direction:', e);
+      return 'neutral';
+    }
+  };
+
+  checkSignalConfirmation = async (symbol: string, strategy: TStrategyType, signal: TSignal, analysis: TAnalysisResult): Promise<boolean> => {
+    const candleDirection = await this.fetchCandleDirection(symbol);
+    const last15Digits = analysis.lastDigits.slice(-15);
+    const evenInLast15 = last15Digits.filter(d => d % 2 === 0).length;
+    const oddInLast15 = last15Digits.filter(d => d % 2 !== 0).length;
+    const highInLast15 = last15Digits.filter(d => d >= 5).length;
+    const lowInLast15 = last15Digits.filter(d => d < 5).length;
+
+    let alignsWith30Min = true;
+    let alignsWith15Ticks = true;
+
+    if (strategy === 'even_odd' || strategy === 'pro_even_odd' || strategy === 'super') {
+      const isEvenSignal = signal.recommendation.toLowerCase().includes('even');
+      if (candleDirection !== 'neutral') {
+        alignsWith30Min = isEvenSignal ? (candleDirection === 'up') : (candleDirection === 'down');
+      }
+      alignsWith15Ticks = isEvenSignal ? (evenInLast15 >= 8) : (oddInLast15 >= 8);
+    } 
+    else if (strategy === 'over_under' || strategy === 'pro_over_under' || strategy === 'under_7' || strategy === 'over_2') {
+      const isOverSignal = signal.recommendation.toLowerCase().includes('over') || strategy === 'over_2';
+      if (candleDirection !== 'neutral') {
+        alignsWith30Min = isOverSignal ? (candleDirection === 'up') : (candleDirection === 'down');
+      }
+      alignsWith15Ticks = isOverSignal ? (highInLast15 >= 8) : (lowInLast15 >= 8);
+    }
+    else if (strategy === 'rise_fall') {
+      const isRiseSignal = signal.recommendation.toLowerCase().includes('rise');
+      if (candleDirection !== 'neutral') {
+        alignsWith30Min = isRiseSignal ? (candleDirection === 'up') : (candleDirection === 'down');
+      }
+      const last15TicksData = analysis.lastDigits.slice(-15);
+      const quoteTrend = last15TicksData[last15TicksData.length - 1] - last15TicksData[0];
+      alignsWith15Ticks = isRiseSignal ? (quoteTrend > 0) : (quoteTrend < 0);
+    }
+
+    return alignsWith30Min && alignsWith15Ticks;
+  };
+
+  setupAutomationListeners = () => {
+    try {
+      const { observer } = require('@/external/bot-skeleton/utils/observer');
+      observer.unregisterAll('bot.contract');
+      observer.register('bot.contract', this.handleContractEvent);
+    } catch (e) {
+      console.warn('[ScannerStore] Failed to register bot contract observer:', e);
+    }
+  };
+
+  handleContractEvent = async (contract: any) => {
+    if (!contract || !contract.is_sold) return;
+
+    const profit = Number(contract.profit) || 0;
+    const isWin = profit > 0;
+
+    if (isWin) {
+      this.consecutive_losses = 0;
+      this.last_trade_result = 'WIN';
+    } else {
+      this.consecutive_losses += 1;
+      this.last_trade_result = 'LOSS';
+
+      if (this.alternate_after_losses && this.consecutive_losses >= this.loss_threshold) {
+        console.log(`[ScannerStore] Loss threshold reached (${this.consecutive_losses} losses). Alternating strategy...`);
+        this.consecutive_losses = 0;
+        await this.rotateStrategy();
+      }
+    }
+  };
+
+  rotateStrategy = async () => {
+    if (this.selected_strategies.length > 1) {
+      this.current_strategy_index = (this.current_strategy_index + 1) % this.selected_strategies.length;
+      const nextStrategy = this.selected_strategies[this.current_strategy_index];
+      
+      const { run_panel } = this.root_store;
+      run_panel.stopBot();
+
+      const bestSignal = this.signals.find(s => s.strategy === nextStrategy);
+      if (bestSignal) {
+        this.current_signal = bestSignal;
+        console.log(`[ScannerStore] Switching to new strategy: ${nextStrategy} on symbol ${bestSignal.symbol}`);
+        
+        await this.loadBotWithStrategy();
+        
+        setTimeout(() => {
+          run_panel.onRunButtonClick();
+        }, 1500);
+      } else {
+        console.log(`[ScannerStore] No active signals for strategy: ${nextStrategy}. Waiting...`);
+      }
+    }
+  };
+
+  evaluateMarketPower = () => {
+    if (!this.is_auto_trading || !this.current_signal) return;
+
+    const activeSignal = this.signals.find(
+      s => s.symbol === this.current_signal?.symbol && s.strategy === this.current_signal?.strategy
+    );
+
+    const { run_panel } = this.root_store;
+
+    if (!activeSignal || activeSignal.confidence < 0.60) {
+      if (run_panel.is_running && !run_panel.is_paused) {
+        console.log(`[ScannerStore] Market power shifted (confidence: ${activeSignal ? activeSignal.confidence : 'none'}). Pausing bot...`);
+        run_panel.onPauseButtonClick();
+      }
+    } else if (activeSignal && activeSignal.confidence >= 0.65) {
+      if (run_panel.is_running && run_panel.is_paused) {
+        console.log(`[ScannerStore] Market power aligned (confidence: ${activeSignal.confidence}). Resuming bot...`);
+        run_panel.onResumeFromPause();
+      }
+    }
+  };
+
   private analyzeMarkets = async () => {
     const TicksService = (await import('@/external/bot-skeleton/services/api/ticks_service')).default;
     const ticksService = new TicksService();
@@ -726,7 +906,7 @@ export default class ScannerStore implements IScannerStore {
       try {
         const ticks = await ticksService.request({
           symbol,
-          count: 100
+          count: 120 // Updated to scan 120 ticks
         });
 
         if (ticks && ticks.length > 0) {
@@ -738,28 +918,34 @@ export default class ScannerStore implements IScannerStore {
             if (strat === 'super') {
               const superSignals = this.generateSuperSignals(analysisResult);
               for (const signal of superSignals) {
-                const scanSignal: TScanSignal = {
-                  symbol,
-                  strategy: signal.type,
-                  confidence: signal.probability,
-                  timestamp: Date.now(),
-                  details: signal,
-                  analysisResult
-                };
-                this.addSignal(scanSignal);
+                const isConfirmed = await this.checkSignalConfirmation(symbol, signal.type, signal, analysisResult);
+                if (isConfirmed) {
+                  const scanSignal: TScanSignal = {
+                    symbol,
+                    strategy: signal.type,
+                    confidence: signal.probability,
+                    timestamp: Date.now(),
+                    details: signal,
+                    analysisResult
+                  };
+                  this.addSignal(scanSignal);
+                }
               }
             } else {
               const signal = allStd.get(strat) || allPro.get(strat);
               if (signal && (signal.status === 'TRADE NOW' || signal.status === 'WAIT')) {
-                const scanSignal: TScanSignal = {
-                  symbol,
-                  strategy: strat,
-                  confidence: signal.probability,
-                  timestamp: Date.now(),
-                  details: signal,
-                  analysisResult
-                };
-                this.addSignal(scanSignal);
+                const isConfirmed = await this.checkSignalConfirmation(symbol, strat, signal, analysisResult);
+                if (isConfirmed) {
+                  const scanSignal: TScanSignal = {
+                    symbol,
+                    strategy: strat,
+                    confidence: signal.probability,
+                    timestamp: Date.now(),
+                    details: signal,
+                    analysisResult
+                  };
+                  this.addSignal(scanSignal);
+                }
               }
             }
           }
@@ -768,6 +954,8 @@ export default class ScannerStore implements IScannerStore {
         console.error(`[ScannerStore] Error analyzing symbol ${symbol}:`, error);
       }
     }
+
+    this.evaluateMarketPower();
   };
 
   loadBotWithStrategy = async () => {
@@ -789,17 +977,33 @@ export default class ScannerStore implements IScannerStore {
       '': ''
     };
 
-    const formData = {
+    // Load Martingale template with custom parameters
+    quick_strategy.setSelectedStrategy('MARTINGALE');
+
+    const formData: any = {
       symbol: this.current_signal.symbol,
       tradetype: strategyTradetypeMap[this.current_signal.strategy] || 'evenodd',
       type: 'DIGITEVEN',
       durationtype: 't',
       duration: '1',
-      stake: '1',
+      stake: this.stake.toString(),
+      profit: this.take_profit.toString(),
+      loss: this.stop_loss.toString(),
+      size: this.martingale_multiplier.toString(),
       action: 'LOAD',
     };
 
-    await quick_strategy.onSubmit(formData as any);
+    if (this.current_signal.details.targetDigit !== undefined) {
+      formData.prediction = this.current_signal.details.targetDigit.toString();
+    }
+
+    const bias = this.current_signal.details.signalDetails?.bias;
+    if (bias === 'even') formData.type = 'DIGITEVEN';
+    else if (bias === 'odd') formData.type = 'DIGITODD';
+    else if (bias === 'high') formData.type = 'DIGITOVER';
+    else if (bias === 'low') formData.type = 'DIGITUNDER';
+
+    await quick_strategy.onSubmit(formData);
   };
 
   loadBotAndRun = async () => {
