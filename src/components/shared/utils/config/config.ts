@@ -1231,3 +1231,16 @@ export const generateOAuthURL = async (prompt?: string, domainConfig = getDomain
 
     return ``;
 };
+
+export const getAppId = () => {
+    try {
+        const domainConfig = getDomainConfig();
+        if (domainConfig && domainConfig.appId) {
+            return domainConfig.appId;
+        }
+    } catch (e) {
+        // Fallback
+    }
+    return localStorage.getItem('APP_ID') || process.env.APP_ID || '1069';
+};
+
