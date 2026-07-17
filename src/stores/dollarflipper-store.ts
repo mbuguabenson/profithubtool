@@ -107,14 +107,21 @@ export default class DollarflipperStore implements IDollarflipperStore {
     this.root_store.scanner.stake = stake > 0.35 ? stake : 0.35; // enforce min stake
     this.root_store.scanner.take_profit = this.target_profit;
     this.root_store.scanner.selected_trade_type = 'over_under';
+    this.root_store.scanner.selected_strategies = ['over_under'];
     
     // Toggle full ai automation ON
     this.root_store.scanner.setFullAiAutomation(true);
+
+    // Automatically trigger scanner if it's not scanning
+    if (!this.root_store.scanner.is_scanning) {
+      this.root_store.scanner.startScanning();
+    }
   };
 
   stopDollarflipper = () => {
     this.is_running = false;
     this.root_store.scanner.setFullAiAutomation(false);
+    this.root_store.scanner.stopScanning();
   };
 
   markSessionCompleted = () => {
