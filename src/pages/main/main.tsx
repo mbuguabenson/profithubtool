@@ -163,8 +163,12 @@ const AppWrapper = observer(() => {
         'signals',
         'auto_trades',
         'scanner',
-        'smart_trading',
+        'smart_auto',
         'manual_trading',
+        'easy_tool',
+        'signal_centre',
+        'marketkiller',
+        'multi_trader',
     ];
     const { isDesktop } = useDevice();
     const location = useLocation();
@@ -558,13 +562,13 @@ const AppWrapper = observer(() => {
                                 label={
                                     <>
                                         <LabelPairedPuzzlePieceTwoCaptionBoldIcon height='28px' width='28px' fill='#f5c542' />
-                                        <Localize i18n_default_text='Smart Trading' />
+                                        <Localize i18n_default_text='SmartAuto' />
                                     </>
                                 }
-                                id='id-smart-trading'
+                                id='id-smart-auto'
                             >
                                 <Suspense
-                                    fallback={<ChunkLoader message={localize('Please wait, loading Smart Trading...')} />}
+                                    fallback={<ChunkLoader message={localize('Please wait, loading SmartAuto...')} />}
                                 >
                                     <SmartTrading />
                                 </Suspense>
@@ -583,6 +587,70 @@ const AppWrapper = observer(() => {
                                     fallback={<ChunkLoader message={localize('Please wait, loading Manual Trading...')} />}
                                 >
                                     <ManualTrading />
+                                </Suspense>
+                            </div>
+
+                            <div
+                                label={
+                                    <>
+                                        <LabelPairedPuzzlePieceTwoCaptionBoldIcon height='28px' width='28px' fill='#f5c542' />
+                                        <Localize i18n_default_text='Easy Tool' />
+                                    </>
+                                }
+                                id='id-easy-tool'
+                            >
+                                <Suspense
+                                    fallback={<ChunkLoader message={localize('Please wait, loading Easy Tool...')} />}
+                                >
+                                    <EasyTool />
+                                </Suspense>
+                            </div>
+
+                            <div
+                                label={
+                                    <>
+                                        <LabelPairedPuzzlePieceTwoCaptionBoldIcon height='28px' width='28px' fill='#f5c542' />
+                                        <Localize i18n_default_text='Signal Centre' />
+                                    </>
+                                }
+                                id='id-signal-centre'
+                            >
+                                <Suspense
+                                    fallback={<ChunkLoader message={localize('Please wait, loading Signal Centre...')} />}
+                                >
+                                    <SignalCentrePage />
+                                </Suspense>
+                            </div>
+
+                            <div
+                                label={
+                                    <>
+                                        <LabelPairedPuzzlePieceTwoCaptionBoldIcon height='28px' width='28px' fill='#f5c542' />
+                                        <Localize i18n_default_text='Marketkiller' />
+                                    </>
+                                }
+                                id='id-marketkiller'
+                            >
+                                <Suspense
+                                    fallback={<ChunkLoader message={localize('Please wait, loading Marketkiller...')} />}
+                                >
+                                    <Marketkiller />
+                                </Suspense>
+                            </div>
+
+                            <div
+                                label={
+                                    <>
+                                        <LabelPairedPuzzlePieceTwoCaptionBoldIcon height='28px' width='28px' fill='#f5c542' />
+                                        <Localize i18n_default_text='Multi Trader' />
+                                    </>
+                                }
+                                id='id-multi-trader'
+                            >
+                                <Suspense
+                                    fallback={<ChunkLoader message={localize('Please wait, loading Multi Trader...')} />}
+                                >
+                                    <MultiTrader />
                                 </Suspense>
                             </div>
                         </Tabs>
