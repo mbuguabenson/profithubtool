@@ -117,7 +117,7 @@ const FloatingChat = () => {
 
 // ─── Dynamic Theme Injector ───────────────────────────────────────────────────
 const DynamicThemeStyle = () => {
-    const [cfg, setCfg] = useState<SiteConfig>(getSiteConfig());
+    const [cfg, setCfg] = useState<any>(getSiteConfig());
 
     useEffect(() => {
         const handler = (e: Event) => {
@@ -133,17 +133,106 @@ const DynamicThemeStyle = () => {
         };
     }, []);
 
+    // Load custom Google Font dynamically
+    useEffect(() => {
+        if (cfg.fontFamily) {
+            const fontName = cfg.fontFamily.replace(/\s+/g, '+');
+            let link = document.getElementById('ph-custom-font') as HTMLLinkElement;
+            if (!link) {
+                link = document.createElement('link');
+                link.id = 'ph-custom-font';
+                link.rel = 'stylesheet';
+                document.head.appendChild(link);
+            }
+            link.href = `https://fonts.googleapis.com/css2?family=${fontName}:wght@300;400;500;600;700;800&display=swap`;
+        }
+    }, [cfg.fontFamily]);
+
+    // Update Favicon dynamically
+    useEffect(() => {
+        if (cfg.faviconBase64) {
+            let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'icon';
+                document.head.appendChild(link);
+            }
+            link.href = cfg.faviconBase64;
+        }
+    }, [cfg.faviconBase64]);
+
+    const primary = cfg.primaryColor || '#f5c542';
+    const secondary = cfg.secondaryColor || '#0e0e0e';
+    const accent = cfg.accentColor || '#3b82f6';
+    const fontFamily = cfg.fontFamily || 'Inter';
+
+    const tabColor = cfg.tabColor || 'rgba(255,255,255,0.6)';
+    const activeTabColor = cfg.activeTabColor || '#ffffff';
+    
+    const loginBg = cfg.loginBtnBg || 'transparent';
+    const loginText = cfg.loginBtnText || '#ffffff';
+    const signupBg = cfg.signupBtnBg || primary;
+    const signupText = cfg.signupBtnText || '#000000';
+    
+    const runPanelBg = cfg.runPanelBg || '#0e0e0e';
+    const runPanelText = cfg.runPanelText || '#ffffff';
+
     const css = `
         :root {
-            --ph-primary: ${cfg.primaryColor};
-            --ph-secondary: ${cfg.secondaryColor};
-            --ph-accent: ${cfg.accentColor};
-            --ph-font: '${cfg.fontFamily}', sans-serif;
+            --ph-primary: ${primary};
+            --ph-secondary: ${secondary};
+            --ph-accent: ${accent};
+            --ph-font: '${fontFamily}', sans-serif;
+            
+            --ph-tab-color: ${tabColor};
+            --ph-tab-active-color: ${activeTabColor};
+            
+            --ph-login-bg: ${loginBg};
+            --ph-login-text: ${loginText};
+            --ph-signup-bg: ${signupBg};
+            --ph-signup-text: ${signupText};
+            
+            --ph-run-panel-bg: ${runPanelBg};
+            --ph-run-panel-text: ${runPanelText};
+        }
+        
+        body, html, button, input, select, textarea {
+            font-family: '${fontFamily}', -apple-system, sans-serif !important;
+        }
+
+        /* Active & Inactive Tabs */
+        .dc-tabs__item:not(.dc-tabs__active) {
+            color: var(--ph-tab-color) !important;
+        }
+        .dc-tabs__active {
+            color: var(--ph-tab-active-color) !important;
+        }
+        .dc-tabs__active-line {
+            background: var(--ph-tab-active-color) !important;
+        }
+
+        /* Custom Login / Signup button overrides */
+        .app-header__login-btn {
+            background-color: var(--ph-login-bg) !important;
+            color: var(--ph-login-text) !important;
+            border: 1px solid var(--ph-login-text) !important;
+        }
+        .app-header__signup-btn {
+            background-color: var(--ph-signup-bg) !important;
+            color: var(--ph-signup-text) !important;
+            border: 1px solid var(--ph-signup-bg) !important;
+        }
+
+        /* Run panel styles */
+        .run-panel, .run-panel__container {
+            background-color: var(--ph-run-panel-bg) !important;
+            color: var(--ph-run-panel-text) !important;
         }
     `;
 
     return <style dangerouslySetInnerHTML={{ __html: css }} />;
 };
+
 
 // ─── Maintenance Mode Overlay ─────────────────────────────────────────────────
 const MaintenanceOverlay = () => {

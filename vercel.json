@@ -1,9 +1,10 @@
 {
   "cleanUrls": true,
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+  "routes": [
+    { "src": "/static/(.*)", "dest": "/static/$1" },
+    { "src": "/assets/(.*)", "dest": "/assets/$1" },
+    { "src": "/js/(.*)", "dest": "/js/$1" },
+    { "src": "/xml-uploads/(.*)", "dest": "/xml-uploads/$1" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
