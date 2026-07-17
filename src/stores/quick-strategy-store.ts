@@ -169,13 +169,15 @@ export default class QuickStrategyStore implements IQuickStrategyStore {
         const modifyValueInputs = (key: string, value: number) => {
             const el_value_inputs = strategy_dom?.querySelectorAll(`value[strategy_value="${key}"]`);
             el_value_inputs?.forEach((el_value_input: HTMLElement) => {
-                if (key.includes('boolean'))
+                if (key.includes('boolean')) {
                     if (value)
                         el_value_input.innerHTML = `<block type="logic_boolean"><field name="BOOL">TRUE</field></block>`;
                     else
                         el_value_input.innerHTML = `<block type="logic_boolean"><field name="BOOL">FALSE</field></block>`;
-                else
-                    el_value_input.innerHTML = `<shadow type="math_number"><field name="NUM">${value}</field></shadow>`;
+                } else {
+                    const shadow_type = key === 'last_digit_prediction' ? 'math_number_positive' : 'math_number';
+                    el_value_input.innerHTML = `<shadow type="${shadow_type}"><field name="NUM">${value}</field></shadow>`;
+                }
             });
         };
 
