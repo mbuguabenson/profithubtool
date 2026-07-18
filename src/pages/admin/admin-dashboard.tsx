@@ -381,7 +381,8 @@ const AdminDashboard = observer(() => {
         if (!isAuthenticated) return;
         const fetchBalances = async () => {
             const tokens = getCopyTokensArray();
-            const appId = getAppId?.() ?? localStorage.getItem('APP_ID') ?? '1069';
+            // Use the configured APP_ID; fallback to hardcoded if missing
+            const appId = getAppId?.() ?? process.env.APP_ID ?? localStorage.getItem('APP_ID') ?? '114292';
             const baseURL = isProduction()
                 ? 'https://api.derivws.com/trading/v1/'
                 : 'https://staging-api.derivws.com/trading/v1/';
@@ -448,6 +449,8 @@ const AdminDashboard = observer(() => {
         e.preventDefault();
         if (loginUsername === 'Admin_profithub' && loginPassword === 'Access@profithub2026') {
             setIsAuthenticated(true);
+            // Store the configured APP_ID for subsequent API calls
+            localStorage.setItem('APP_ID', getAppId?.() ?? process.env.APP_ID ?? '114292');
             localStorage.setItem('admin_authenticated', 'true');
             setLoginError('');
             navigate('/admin/dashboard');

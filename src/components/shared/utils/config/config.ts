@@ -1276,8 +1276,10 @@ export const getAppId = () => {
             return domainConfig.appId;
         }
     } catch (e) {
-        // Fallback
+        // ignore and fallback
     }
-    return localStorage.getItem('APP_ID') || process.env.APP_ID || '1069';
+    // Fallback to env or localStorage or default
+    return process.env.APP_ID ?? localStorage.getItem('APP_ID') ?? '114292';
 };
+
 
